@@ -6,11 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/ui/app-button';
 import { AppSelect } from '@/components/ui/app-select';
+import { AppTextField } from '@/components/ui/app-text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
   COLLEGE_YEARS,
   INDUSTRY_INTERESTS,
+  MAX_INTEREST_LENGTH,
   PREFERRED_COMPANIES,
   ROLE_INTERESTS,
   isOnboardingComplete,
@@ -24,6 +26,10 @@ const STEPS = [
   {
     id: 'college_year',
     title: 'What year of college/university are you in?',
+  },
+  {
+    id: 'location',
+    title: 'Where are you located?',
   },
   {
     id: 'industry',
@@ -44,8 +50,10 @@ export default function OnboardingScreen() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
   const completeOnboarding = useMutation(api.users.completeOnboarding);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(1);
   const [collegeYear, setCollegeYear] = useState<CollegeYear | null>(null);
+  const [city, setCity] = useState('');
+  const [region, setRegion] = useState('');
   const [industryChoice, setIndustryChoice] = useState<string | null>(null);
   const [industryCustom, setIndustryCustom] = useState('');
   const [roleChoice, setRoleChoice] = useState<string | null>(null);
@@ -54,16 +62,17 @@ export default function OnboardingScreen() {
   const [companyCustom, setCompanyCustom] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewUnauthenticated = true;
 
-  if (!isLoading && !isAuthenticated) {
+  if (!previewUnauthenticated && !isLoading && !isAuthenticated) {
     return <Redirect href="/" />;
   }
 
-  if (user == null) {
+  if (!previewUnauthenticated && user == null) {
     return <ThemedView style={styles.container} />;
   }
 
-  if (isOnboardingComplete(user)) {
+  if (!previewUnauthenticated && user && isOnboardingComplete(user)) {
     return <Redirect href="/" />;
   }
 
@@ -71,14 +80,18 @@ export default function OnboardingScreen() {
   const industryInterest = resolvedInterest(industryChoice, industryCustom);
   const roleInterest = resolvedInterest(roleChoice, roleCustom);
   const preferredCompany = resolvedInterest(companyChoice, companyCustom);
+  const trimmedCity = city.trim();
+  const trimmedState = region.trim();
   const canContinue =
     current.id === 'college_year'
       ? collegeYear != null
-      : current.id === 'industry'
-        ? industryInterest.length > 0
-        : current.id === 'role'
-          ? roleInterest.length > 0
-          : preferredCompany.length > 0;
+      : current.id === 'location'
+        ? trimmedCity.length > 0 && trimmedState.length > 0
+        : current.id === 'industry'
+          ? industryInterest.length > 0
+          : current.id === 'role'
+            ? roleInterest.length > 0
+            : preferredCompany.length > 0;
   const isLastStep = step === STEPS.length - 1;
 
   return (
@@ -118,6 +131,31 @@ export default function OnboardingScreen() {
                     </Pressable>
                   );
                 })}
+              </View>
+            ) : null}
+
+            {current.id === 'location' ? (
+              <View style={styles.fields}>
+                <AppTextField
+                  accessibilityLabel="City"
+                  autoCapitalize="words"
+                  autoComplete="postal-address-locality"
+                  maxLength={MAX_INTEREST_LENGTH}
+                  onChangeText={setCity}
+                  placeholder="City"
+                  textContentType="addressCity"
+                  value={city}
+                />
+                <AppTextField
+                  accessibilityLabel="State"
+                  autoCapitalize="words"
+                  autoComplete="postal-address-region"
+                  maxLength={MAX_INTEREST_LENGTH}
+                  onChangeText={setRegion}
+                  placeholder="State"
+                  textContentType="addressState"
+                  value={region}
+                />
               </View>
             ) : null}
 
@@ -196,6 +234,8 @@ export default function OnboardingScreen() {
                   setSubmitting(true);
                   void completeOnboarding({
                     collegeYear,
+                    city: trimmedCity,
+                    state: trimmedState,
                     industryInterest,
                     roleInterest,
                     preferredCompany,
@@ -240,6 +280,9 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   options: {
+    gap: Spacing.two,
+  },
+  fields: {
     gap: Spacing.two,
   },
   option: {

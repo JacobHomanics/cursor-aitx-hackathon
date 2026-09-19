@@ -62,6 +62,8 @@ export const completeOnboarding = mutation({
       v.literal('graduate'),
       v.literal('other'),
     ),
+    city: v.string(),
+    state: v.string(),
     industryInterest: v.string(),
     roleInterest: v.string(),
     preferredCompany: v.string(),
@@ -72,13 +74,17 @@ export const completeOnboarding = mutation({
       throw new Error('Not authenticated');
     }
 
+    const city = args.city.trim();
+    const state = args.state.trim();
     const industryInterest = args.industryInterest.trim();
     const roleInterest = args.roleInterest.trim();
     const preferredCompany = args.preferredCompany.trim();
-    if (!industryInterest || !roleInterest || !preferredCompany) {
-      throw new Error('Industry, role, and preferred company are required');
+    if (!city || !state || !industryInterest || !roleInterest || !preferredCompany) {
+      throw new Error('All onboarding answers are required');
     }
     if (
+      city.length > 80 ||
+      state.length > 80 ||
       industryInterest.length > 80 ||
       roleInterest.length > 80 ||
       preferredCompany.length > 80
@@ -97,6 +103,8 @@ export const completeOnboarding = mutation({
 
     await ctx.db.patch(existing._id, {
       collegeYear: args.collegeYear,
+      city,
+      state,
       industryInterest,
       roleInterest,
       preferredCompany,

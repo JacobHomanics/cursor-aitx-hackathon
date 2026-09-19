@@ -19,6 +19,8 @@ export default defineSchema({
         v.literal('other'),
       ),
     ),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
     industryInterest: v.optional(v.string()),
     roleInterest: v.optional(v.string()),
     preferredCompany: v.optional(v.string()),
