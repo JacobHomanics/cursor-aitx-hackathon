@@ -81,9 +81,16 @@ export function resolvedInterest(choice: string | null, customValue: string) {
   return choice;
 }
 
+export function locationLabel(city: string | undefined, state: string | undefined) {
+  const parts = [city?.trim(), state?.trim()].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
 export function isOnboardingComplete(user: {
   onboardingCompletedAt?: number;
   collegeYear?: string;
+  city?: string;
+  state?: string;
   industryInterest?: string;
   roleInterest?: string;
   preferredCompany?: string;
@@ -91,6 +98,8 @@ export function isOnboardingComplete(user: {
   return Boolean(
     user.onboardingCompletedAt &&
       user.collegeYear &&
+      user.city?.trim() &&
+      user.state?.trim() &&
       user.industryInterest?.trim() &&
       user.roleInterest?.trim() &&
       user.preferredCompany?.trim(),
