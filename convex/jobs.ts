@@ -11,7 +11,7 @@ export type InternshipListing = {
 const MUSE_JOBS_URL = 'https://www.themuse.com/api/public/jobs';
 const MUSE_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'AITX-Hackathon/1.0',
+  'User-Agent': 'NorthBound/1.0',
 };
 
 const ROLE_CATEGORIES: Record<string, string[]> = {

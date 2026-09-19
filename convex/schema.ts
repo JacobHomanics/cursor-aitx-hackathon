@@ -10,6 +10,7 @@ export default defineSchema({
     phone: v.optional(v.string()),
     collegeYear: v.optional(
       v.union(
+        v.literal('not_yet'),
         v.literal('first_year'),
         v.literal('second_year'),
         v.literal('third_year'),
@@ -19,11 +20,34 @@ export default defineSchema({
         v.literal('other'),
       ),
     ),
+    inCollege: v.optional(v.boolean()),
+    highSchool: v.optional(v.string()),
+    gpa: v.optional(v.number()),
+    dateOfBirth: v.optional(v.string()),
+    country: v.optional(v.string()),
     city: v.optional(v.string()),
     state: v.optional(v.string()),
     industryInterest: v.optional(v.string()),
     roleInterest: v.optional(v.string()),
     preferredCompany: v.optional(v.string()),
+    hardSkills: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          level: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5)),
+        }),
+      ),
+    ),
+    softSkills: v.optional(
+      v.object({
+        communication: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5)),
+        teamwork: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5)),
+        problemSolving: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5)),
+        timeManagement: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5)),
+        adaptability: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5)),
+        leadership: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5)),
+      }),
+    ),
     onboardingCompletedAt: v.optional(v.number()),
   })
     .index('by_token', ['tokenIdentifier'])
@@ -61,7 +85,7 @@ export default defineSchema({
    */
   activityLog: defineTable({
     tokenIdentifier: v.string(),
-    kind: v.union(v.literal('event'), v.literal('course')),
+    kind: v.union(v.literal('event'), v.literal('course'), v.literal('internship')),
     itemId: v.string(),
     name: v.string(),
     url: v.string(),

@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 
-import { formatActivityLog, type ActivityHistory } from './activity';
+import { formatActivityLog, loggedIds, type ActivityHistory } from './activity';
 import { internal } from './_generated/api';
 import { action, internalMutation, query } from './_generated/server';
 import {
@@ -12,7 +12,7 @@ import {
   type ChatPick,
 } from './chatgpt';
 import { searchInternshipListings, type InternshipListing } from './jobs';
-import { formatProfile, type FormattedProfile, type StudentProfile } from './profile';
+import { formatProfile, formatProfileLines, type FormattedProfile, type StudentProfile } from './profile';
 
 const listingValidator = v.object({
   id: v.string(),
@@ -79,7 +79,14 @@ export const saveLatest = internalMutation({
 
 export const recommendInternship = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{
+    title: string;
+    summary: string;
+    listings: ReturnType<typeof rankListings>;
+    createdAt: number;
+    prompt: string;
+    response: string;
+  }> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error('Sign in to get an internship recommendation');
@@ -92,13 +99,16 @@ export const recommendInternship = action({
 
     const history: ActivityHistory = await ctx.runQuery(internal.activity.historyInternal, {});
     const profile = formatProfile(user);
-    const catalog = await searchInternshipListings({
-      roleInterest: user.roleInterest,
-      industryInterest: user.industryInterest,
-      preferredCompany: user.preferredCompany,
-      city: user.city,
-      state: user.state,
-    });
+    const completedInternshipIds = loggedIds(history.internships);
+    const catalog: InternshipListing[] = (
+      await searchInternshipListings({
+        roleInterest: user.roleInterest,
+        industryInterest: user.industryInterest,
+        preferredCompany: user.preferredCompany,
+        city: user.city,
+        state: user.state,
+      })
+    ).filter((listing) => !completedInternshipIds.has(listing.id));
     const { title, summary, picks, prompt, response } = await recommendWithChatGPT(
       profile,
       catalog,
@@ -130,7 +140,7 @@ async function recommendWithChatGPT(
       : 'No public internship listings were found for this profile.';
   const system = [
     'You match a college student to real public internship listings from The Muse.',
-    'You will receive their profile, a log of events they attended and courses they completed, and a numbered list of live internship postings.',
+    'You will receive their profile, a log of events they attended, courses they completed, internships they finished, and a numbered list of live internship postings.',
     'Recommend one internship job title they should apply for, then pick the best matching listings from the list.',
     'Connect the student to those listings: name the job and company in your writeup and explain why each pick fits their year, location, industry, role, preferred company, or activity log.',
     'Only use listings from the list. Do not invent postings, companies, or URLs.',
@@ -142,11 +152,7 @@ async function recommendWithChatGPT(
   ].join(' ');
   const user = [
     'Student profile:',
-    `- College year: ${profile.collegeYear}`,
-    `- Location: ${profile.location}`,
-    `- Industry interest: ${profile.industry}`,
-    `- Role interest: ${profile.role}`,
-    `- Preferred company: ${profile.preferredCompany}`,
+    ...formatProfileLines(profile),
     '',
     formatActivityLog(history),
     '',

@@ -6,7 +6,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { AppTextField } from '@/components/ui/app-text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { collegeYearLabel, INDUSTRY_INTERESTS, interestLabel, locationLabel, PREFERRED_COMPANIES, ROLE_INTERESTS, type CollegeYear } from '@/constants/onboarding';
+import { profileSummaryBits } from '@/constants/onboarding';
 import { Spacing } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useLoginWithEmail } from '@/hooks/use-login-with-email';
@@ -42,9 +42,8 @@ function SetupCard() {
 }
 
 function ConfiguredAuthCard() {
-  const { ready, isAuthenticated, displayName, userId, logout } = useAppAuth();
+  const { ready, isAuthenticated, displayName, logout } = useAppAuth();
   const convexUser = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
-  const convexStatus = useQuery(api.status.ping, isConvexConfigured ? {} : 'skip');
 
   if (!ready) {
     return (
@@ -62,51 +61,19 @@ function ConfiguredAuthCard() {
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">Signed in with Privy</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        {displayName ?? userId}
-      </ThemedText>
-      {convexUser ? (
-        <OnboardingSummary
-          collegeYear={convexUser.collegeYear}
-          city={convexUser.city}
-          state={convexUser.state}
-          industryInterest={convexUser.industryInterest}
-          roleInterest={convexUser.roleInterest}
-          preferredCompany={convexUser.preferredCompany}
-        />
-      ) : null}
-      <ThemedText type="code" themeColor="textSecondary">
-        Convex {convexStatus?.ok ? 'connected' : 'waiting'}
-        {convexUser ? ` · ${convexUser.privyDid}` : ''}
-      </ThemedText>
+      <ThemedText type="smallBold">{displayName ?? 'Signed in'}</ThemedText>
+      {convexUser ? <OnboardingSummary user={convexUser} /> : null}
       <AppButton label="Sign out" variant="secondary" onPress={() => void logout()} />
     </ThemedView>
   );
 }
 
 function OnboardingSummary({
-  collegeYear,
-  city,
-  state,
-  industryInterest,
-  roleInterest,
-  preferredCompany,
+  user,
 }: {
-  collegeYear?: CollegeYear;
-  city?: string;
-  state?: string;
-  industryInterest?: string;
-  roleInterest?: string;
-  preferredCompany?: string;
+  user: Parameters<typeof profileSummaryBits>[0];
 }) {
-  const summary = [
-    collegeYearLabel(collegeYear),
-    locationLabel(city, state),
-    interestLabel(INDUSTRY_INTERESTS, industryInterest),
-    interestLabel(ROLE_INTERESTS, roleInterest),
-    interestLabel(PREFERRED_COMPANIES, preferredCompany),
-  ].filter(Boolean);
+  const summary = profileSummaryBits(user);
 
   if (summary.length === 0) {
     return null;
@@ -152,33 +119,32 @@ function LoginForm() {
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">Sign in</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Email, phone, Google, or Twitter. Convex stores the user after login.
-      </ThemedText>
-
-      <View style={styles.methodRow}>
-        <MethodTab
-          label="Email"
-          selected={method === 'email'}
-          onPress={() => {
-            setMethod('email');
-            setCode('');
-            setCodeSent(false);
-            setError(null);
-          }}
-        />
-        <MethodTab
-          label="Phone"
-          selected={method === 'phone'}
-          onPress={() => {
-            setMethod('phone');
-            setCode('');
-            setCodeSent(false);
-            setError(null);
-          }}
-        />
-      </View>
+      <ThemedView type="backgroundSelected" style={styles.methodRow}>
+        <View style={styles.methodTabWrap}>
+          <MethodTab
+            label="Email"
+            selected={method === 'email'}
+            onPress={() => {
+              setMethod('email');
+              setCode('');
+              setCodeSent(false);
+              setError(null);
+            }}
+          />
+        </View>
+        <View style={styles.methodTabWrap}>
+          <MethodTab
+            label="Phone"
+            selected={method === 'phone'}
+            onPress={() => {
+              setMethod('phone');
+              setCode('');
+              setCodeSent(false);
+              setError(null);
+            }}
+          />
+        </View>
+      </ThemedView>
 
       <AppTextField
         autoCapitalize="none"
@@ -231,18 +197,24 @@ function LoginForm() {
         or
       </ThemedText>
 
-      <AppButton
-        disabled={busy || socialLogin.busy}
-        label="Continue with Google"
-        variant="secondary"
-        onPress={() => loginWithSocial('google')}
-      />
-      <AppButton
-        disabled={busy || socialLogin.busy}
-        label="Continue with Twitter"
-        variant="secondary"
-        onPress={() => loginWithSocial('twitter')}
-      />
+      <View style={styles.socialRow}>
+        <View style={styles.socialButton}>
+          <AppButton
+            disabled={busy || socialLogin.busy}
+            label="Google"
+            variant="secondary"
+            onPress={() => loginWithSocial('google')}
+          />
+        </View>
+        <View style={styles.socialButton}>
+          <AppButton
+            disabled={busy || socialLogin.busy}
+            label="Twitter"
+            variant="secondary"
+            onPress={() => loginWithSocial('twitter')}
+          />
+        </View>
+      </View>
     </ThemedView>
   );
 }
@@ -257,9 +229,9 @@ function MethodTab({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.methodPress, pressed && styles.pressed]}>
       <ThemedView
-        type={selected ? 'backgroundSelected' : 'backgroundElement'}
+        type={selected ? 'background' : 'backgroundSelected'}
         style={styles.methodTab}>
         <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
           {label}
@@ -272,22 +244,36 @@ function MethodTab({
 const styles = StyleSheet.create({
   card: {
     alignSelf: 'stretch',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: 20,
   },
   methodRow: {
     flexDirection: 'row',
-    gap: Spacing.two,
+    gap: Spacing.one,
+    padding: Spacing.one,
+    borderRadius: Spacing.three,
+  },
+  methodTabWrap: {
+    flex: 1,
+  },
+  methodPress: {
+    flex: 1,
   },
   methodTab: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   or: {
     textAlign: 'center',
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  socialButton: {
+    flex: 1,
   },
   pressed: {
     opacity: 0.7,

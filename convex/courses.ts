@@ -10,7 +10,7 @@ import {
   prettyJson,
   type ChatPick,
 } from './chatgpt';
-import { formatProfile, type FormattedProfile, type StudentProfile } from './profile';
+import { formatProfile, formatProfileLines, type FormattedProfile, type StudentProfile } from './profile';
 import { searchYoutubeCourses, type YoutubeCourse } from './youtube';
 
 const analyzedCourseValidator = v.object({
@@ -143,11 +143,7 @@ async function analyzeWithChatGPT(
   ].join(' ');
   const user = [
     'Student profile:',
-    `- College year: ${profile.collegeYear}`,
-    `- Location: ${profile.location}`,
-    `- Industry interest: ${profile.industry}`,
-    `- Role interest: ${profile.role}`,
-    `- Preferred company: ${profile.preferredCompany}`,
+    ...formatProfileLines(profile),
     '',
     formatActivityLog(history),
     '',

@@ -3,21 +3,16 @@ import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CompletionButton } from '@/components/completion-button';
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton } from '@/components/ui/app-button';
 import { Collapsible } from '@/components/ui/collapsible';
-import {
-  collegeYearLabel,
-  INDUSTRY_INTERESTS,
-  interestLabel,
-  locationLabel,
-  PREFERRED_COMPANIES,
-  ROLE_INTERESTS,
-} from '@/constants/onboarding';
+import { profileSummaryBits } from '@/constants/onboarding';
 import { BottomTabInset, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useCompletedItems } from '@/hooks/use-completed-items';
 import { useTheme } from '@/hooks/use-theme';
 import { api } from '@convex/_generated/api';
 
@@ -29,6 +24,7 @@ export default function InternshipsScreen() {
   const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
   const latest = useQuery(api.internships.latest, isAuthenticated ? {} : 'skip');
   const recommendInternship = useAction(api.internships.recommendInternship);
+  const { completedIds, setItemCompleted } = useCompletedItems('internship');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,15 +45,7 @@ export default function InternshipsScreen() {
     },
   });
 
-  const profileBits = user
-    ? [
-        locationLabel(user.city, user.state),
-        collegeYearLabel(user.collegeYear),
-        interestLabel(INDUSTRY_INTERESTS, user.industryInterest),
-        interestLabel(ROLE_INTERESTS, user.roleInterest),
-        interestLabel(PREFERRED_COMPANIES, user.preferredCompany),
-      ].filter(Boolean)
-    : [];
+  const profileBits = user ? profileSummaryBits(user) : [];
   const listings = latest?.listings ?? [];
 
   return (
@@ -145,7 +133,14 @@ export default function InternshipsScreen() {
                       No public internship listings were returned for this profile.
                     </ThemedText>
                   ) : (
-                    listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)
+                    listings.map((listing) => (
+                      <ListingCard
+                        key={listing.id}
+                        listing={listing}
+                        completed={completedIds.has(listing.id)}
+                        onCompletedChange={(completed) => setItemCompleted(listing.id, completed)}
+                      />
+                    ))
                   )}
                 </>
               ) : null}
@@ -159,6 +154,8 @@ export default function InternshipsScreen() {
 
 function ListingCard({
   listing,
+  completed,
+  onCompletedChange,
 }: {
   listing: {
     id: string;
@@ -171,13 +168,15 @@ function ListingCard({
     reason?: string;
     fit?: 'high' | 'medium' | 'low';
   };
+  completed: boolean;
+  onCompletedChange: (completed: boolean) => Promise<unknown>;
 }) {
   const meta = [listing.company, listing.location, listing.category, formatPosted(listing.publishedAt)]
     .filter(Boolean)
     .join(' · ');
 
   return (
-    <ThemedView type="backgroundElement" style={styles.listingCard}>
+    <ThemedView type="backgroundElement" style={[styles.listingCard, completed && styles.doneCard]}>
       <View style={styles.listingBody}>
         <View style={styles.titleRow}>
           <ThemedText type="smallBold" style={styles.listingName}>
@@ -200,6 +199,12 @@ function ListingCard({
         <ExternalLink href={listing.url as `${string}:${string}`}>
           <ThemedText type="linkPrimary">Open listing</ThemedText>
         </ExternalLink>
+        <CompletionButton
+          done={completed}
+          todoLabel="I completed this internship"
+          doneLabel="Completed"
+          onChange={onCompletedChange}
+        />
       </View>
     </ThemedView>
   );
@@ -262,6 +267,9 @@ const styles = StyleSheet.create({
   listingCard: {
     borderRadius: Spacing.four,
     overflow: 'hidden',
+  },
+  doneCard: {
+    opacity: 0.75,
   },
   listingBody: {
     gap: Spacing.two,

@@ -14,6 +14,7 @@ import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
+import { APP_NAME } from '@/constants/app';
 import { Colors, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 
@@ -84,7 +85,7 @@ export function CustomTabList({ placement, ...props }: CustomTabListProps) {
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         {isDesktop ? (
           <ThemedText type="smallBold" style={styles.brandText}>
-            AITX
+            {APP_NAME}
           </ThemedText>
         ) : null}
 

@@ -10,14 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton } from '@/components/ui/app-button';
 import { Collapsible } from '@/components/ui/collapsible';
-import {
-  collegeYearLabel,
-  INDUSTRY_INTERESTS,
-  interestLabel,
-  locationLabel,
-  PREFERRED_COMPANIES,
-  ROLE_INTERESTS,
-} from '@/constants/onboarding';
+import { profileSummaryBits } from '@/constants/onboarding';
 import { BottomTabInset, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useCompletedItems } from '@/hooks/use-completed-items';
@@ -53,15 +46,7 @@ export default function AnalyzerScreen() {
     },
   });
 
-  const profileBits = user
-    ? [
-        locationLabel(user.city, user.state),
-        collegeYearLabel(user.collegeYear),
-        interestLabel(INDUSTRY_INTERESTS, user.industryInterest),
-        interestLabel(ROLE_INTERESTS, user.roleInterest),
-        interestLabel(PREFERRED_COMPANIES, user.preferredCompany),
-      ].filter(Boolean)
-    : [];
+  const profileBits = user ? profileSummaryBits(user) : [];
 
   return (
     <ScrollView

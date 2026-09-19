@@ -1,4 +1,4 @@
-# AITX
+# North Bound
 
 Universal Expo app for desktop web, mobile web, iOS, and Android, with a Convex backend and Privy login.
 

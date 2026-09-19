@@ -30,6 +30,7 @@ export default function DashboardScreen() {
           collegeYear: user.collegeYear as CollegeYear | undefined,
           city: user.city,
           state: user.state,
+          country: user.country,
           roleInterest: user.roleInterest,
           preferredCompany: user.preferredCompany,
         }

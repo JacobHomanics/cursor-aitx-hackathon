@@ -1,34 +1,27 @@
 import { useConvexAuth, useQuery } from 'convex/react';
-import { createElement, useRef, useState, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { createElement, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton } from '@/components/ui/app-button';
-import {
-  BottomTabInset,
-  Fonts,
-  MaxContentWidth,
-  Spacing,
-  WebTabBarHeight,
-} from '@/constants/theme';
+import { buildJourney, yearlyGoals } from '@/constants/journey';
+import type { CollegeYear } from '@/constants/onboarding';
+import { BottomTabInset, Fonts, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useJourneyColors } from '@/hooks/use-journey-colors';
 import {
-  broadGoalsFor,
+  briefProfileFor,
   companyLabel,
   displayNameFor,
-  formatLoggedDate,
   industryLabel,
   initialsFor,
   placeLabel,
   resumeHtml,
   roleLabel,
-  semesterGoalFor,
   standingFor,
-  thisWeekItems,
   weekWindowLabel,
   weeklyAchievementFor,
   yearLabel,
@@ -45,21 +38,36 @@ export default function ProfileScreen() {
   const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
   const history = useQuery(api.activity.list, isAuthenticated ? {} : 'skip');
   const [pdfBusy, setPdfBusy] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
-  const courses: ResumeItem[] = (history?.courses ?? []).map((course) => ({ ...course }));
-  const events: ResumeItem[] = (history?.events ?? []).map((event) => ({ ...event }));
-  const record = [...courses, ...events];
+  const journeyProfile = user
+    ? {
+        collegeYear: user.collegeYear as CollegeYear | undefined,
+        city: user.city,
+        state: user.state,
+        country: user.country,
+        roleInterest: user.roleInterest,
+        preferredCompany: user.preferredCompany,
+      }
+    : null;
+  const { goal: graduation } = buildJourney(journeyProfile);
+  const years = yearlyGoals(journeyProfile);
+  const thisYear = years.find((goal) => goal.status === 'current') ?? years[0];
+
+  const internships: ResumeItem[] = (history?.internships ?? []).map((item) => ({ ...item }));
+  const courses: ResumeItem[] = (history?.courses ?? []).map((item) => ({ ...item }));
+  const events: ResumeItem[] = (history?.events ?? []).map((item) => ({ ...item }));
+  const record = [...internships, ...courses, ...events];
   const name = displayNameFor(user, auth.displayName);
-  const standing = standingFor(courses.length, events.length);
+  const standing = standingFor(courses.length, events.length, internships.length);
+  const weekly = weeklyAchievementFor(record, user);
   const email = user?.email ?? auth.email;
   const phone = user?.phone ?? auth.phone;
-  const goals = broadGoalsFor(user);
-  const weekly = weeklyAchievementFor(record, user);
-  const semester = semesterGoalFor(user);
-  const weekLabel = weekWindowLabel();
-  const weekItems = thisWeekItems(record);
+  const brief = briefProfileFor(user, standing, graduation.title, thisYear?.title ?? '—', {
+    internships: internships.length,
+    courses: courses.length,
+    events: events.length,
+  });
 
   const openPdf = () => {
     const html = resumeHtml({
@@ -68,179 +76,94 @@ export default function ProfileScreen() {
       phone,
       place: placeLabel(user),
       year: yearLabel(user),
+      school: user?.highSchool,
+      gpa: user?.gpa != null ? `GPA ${user.gpa}` : undefined,
+      skills: user?.hardSkills?.length
+        ? user.hardSkills.map((skill) => `${skill.name} (${skill.level}/5)`).join(', ')
+        : undefined,
       standing,
-      goals,
+      graduation,
+      yearly: years,
       weekly,
-      semester,
-      weekLabel,
+      weekLabel: weekWindowLabel(),
+      internships,
       courses,
       events,
     });
-    setPdfError(null);
     if (!canPrintInPlace()) {
       setPreviewHtml(html);
       return;
     }
     setPdfBusy(true);
-    void printResumePdf(html)
-      .catch((error: unknown) => {
-        setPdfError(error instanceof Error ? error.message : 'Could not open resume PDF');
-      })
-      .finally(() => {
-        setPdfBusy(false);
-      });
+    void printResumePdf(html).finally(() => setPdfBusy(false));
   };
 
   return (
     <ThemedView style={styles.container}>
-      <View pointerEvents="none" style={[styles.blob, styles.blobTop, { backgroundColor: colors.accentGlow }]} />
-      <View pointerEvents="none" style={[styles.blob, styles.blobSide, { backgroundColor: colors.goldGlow }]} />
-
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          isMobileWeb && { paddingBottom: WebTabBarHeight + Spacing.five },
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          { paddingBottom: isMobileWeb ? WebTabBarHeight + Spacing.three : BottomTabInset + Spacing.three },
         ]}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
-            <ThemedText type="code" themeColor="textSecondary" style={styles.eyebrow}>
-              Profile
-            </ThemedText>
-            <ThemedText type="subtitle" style={{ fontFamily: Fonts.serif }}>
-              Your path
-            </ThemedText>
-          </View>
+        <View style={styles.stack}>
+          <ThemedText type="code" themeColor="textSecondary" style={styles.eyebrow}>
+            Profile
+          </ThemedText>
 
-          {!isAuthenticated || !user ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">Sign in to fill this with your account</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Until then, the sections below use placeholders so you can see the layout.
+          <ThemedView type="backgroundElement" style={styles.identityCard}>
+            <View style={[styles.avatar, { backgroundColor: colors.accentSoft }]}>
+              <ThemedText type="smallBold" style={{ color: colors.accent }}>
+                {initialsFor(name)}
               </ThemedText>
-            </ThemedView>
-          ) : null}
-
-          <Section label="Basics">
-            <ThemedView type="backgroundElement" style={styles.identityCard}>
-              <View style={[styles.avatar, { backgroundColor: colors.accentSoft }]}>
-                <ThemedText type="smallBold" style={{ color: colors.accent }}>
-                  {initialsFor(name)}
-                </ThemedText>
-              </View>
-              <View style={styles.identityCopy}>
-                <ThemedText type="default" style={styles.name}>
-                  {name}
-                </ThemedText>
-                <FactRow label="School year" value={yearLabel(user)} />
-                <FactRow label="Location" value={placeLabel(user)} />
-                <FactRow label="Email" value={email} />
-                {phone ? <FactRow label="Phone" value={phone} /> : null}
-                <FactRow label="Standing" value={standing.label} />
-              </View>
-            </ThemedView>
-          </Section>
-
-          <Section label="Broad goals">
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">{goals.title}</ThemedText>
-              <ThemedText type="small">{goals.detail}</ThemedText>
+            </View>
+            <View style={styles.identityCopy}>
+              <ThemedText type="default" style={styles.name}>
+                {name}
+              </ThemedText>
+              <FactRow label="High school" value={user?.highSchool} />
+              <FactRow label="GPA" value={user?.gpa != null ? String(user.gpa) : undefined} />
+              <FactRow label="School year" value={yearLabel(user)} />
+              <FactRow label="Location" value={placeLabel(user)} />
               <FactRow label="Role" value={roleLabel(user)} />
               <FactRow label="Industry" value={industryLabel(user)} />
               <FactRow label="Company" value={companyLabel(user)} />
-            </ThemedView>
-          </Section>
-
-          <Section label={`This week · ${weekLabel}`}>
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">{weekly.title}</ThemedText>
-              <ThemedText type="small">{weekly.detail}</ThemedText>
-              {weekly.source === 'derived' ? (
-                <ThemedText type="code" themeColor="textSecondary">
-                  Placeholder until you log a course or event
-                </ThemedText>
-              ) : (
-                weekItems.map((item) => (
-                  <ThemedText key={`${item.kind}-${item.itemId}`} type="small" themeColor="textSecondary">
-                    {item.kind === 'course' ? 'Course' : 'Event'} · {item.name} ·{' '}
-                    {formatLoggedDate(item.completedAt)}
-                  </ThemedText>
-                ))
-              )}
-            </ThemedView>
-          </Section>
-
-          <Section label="Semester goal">
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">{semester.title}</ThemedText>
-              <ThemedText type="small">{semester.detail}</ThemedText>
-              <ThemedText type="code" themeColor="textSecondary">
-                Derived from your onboarding target — we can replace this with a saved goal later
-              </ThemedText>
-            </ThemedView>
-          </Section>
-
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">Resume PDF</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Opens a printable resume with your basics, goals, this week, semester target, courses, and
-              events.
-            </ThemedText>
-            <AppButton
-              disabled={pdfBusy}
-              label={pdfBusy ? 'Opening…' : 'View resume PDF'}
-              onPress={openPdf}
-            />
-            {pdfError ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                {pdfError}
-              </ThemedText>
-            ) : null}
+              <FactRow label="Email" value={email} />
+              {phone ? <FactRow label="Phone" value={phone} /> : null}
+            </View>
           </ThemedView>
-        </SafeAreaView>
-      </ScrollView>
+
+          <ThemedView type="backgroundElement" style={styles.overview}>
+            <ThemedText type="code" themeColor="textSecondary">
+              Brief
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {brief}
+            </ThemedText>
+            <Row label="Graduation" value={graduation.title} accent={colors.gold} />
+            <Row label="This year" value={thisYear?.title ?? '—'} accent={colors.accent} />
+            <Row label="This week" value={standing.label} />
+            <View style={styles.counts}>
+              <Count label="Internships" value={internships.length} />
+              <Count label="Courses" value={courses.length} />
+              <Count label="Events" value={events.length} />
+            </View>
+          </ThemedView>
+        </View>
+
+        <View style={styles.actions}>
+          <View style={styles.action}>
+            <AppButton disabled={pdfBusy} label={pdfBusy ? 'Opening…' : 'Resume'} onPress={openPdf} />
+          </View>
+          {isAuthenticated ? (
+            <View style={styles.action}>
+              <AppButton label="Log out" variant="secondary" onPress={() => void auth.logout()} />
+            </View>
+          ) : null}
+        </View>
+      </SafeAreaView>
+
       {previewHtml ? <ResumePreview html={previewHtml} onClose={() => setPreviewHtml(null)} /> : null}
     </ThemedView>
-  );
-}
-
-function ResumePreview({ html, onClose }: { html: string; onClose: () => void }) {
-  const frameRef = useRef<HTMLIFrameElement | null>(null);
-
-  return (
-    <View style={styles.previewShell}>
-      <ThemedView type="background" style={styles.previewBar}>
-        <ThemedText type="smallBold">Resume</ThemedText>
-        <View style={styles.previewActions}>
-          <AppButton
-            label="Print / Save as PDF"
-            onPress={() => frameRef.current?.contentWindow?.print()}
-          />
-          <AppButton label="Close" variant="secondary" onPress={onClose} />
-        </View>
-      </ThemedView>
-      {createElement('iframe', {
-        ref: frameRef,
-        srcDoc: html,
-        title: 'Resume preview',
-        style: {
-          flex: 1,
-          width: '100%',
-          border: 'none',
-          backgroundColor: '#ffffff',
-        },
-      })}
-    </View>
-  );
-}
-
-function Section({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
-        {label}
-      </ThemedText>
-      {children}
-    </View>
   );
 }
 
@@ -257,49 +180,73 @@ function FactRow({ label, value }: { label: string; value?: string }) {
   );
 }
 
+function Row({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <View style={styles.row}>
+      <ThemedText type="code" themeColor="textSecondary">
+        {label}
+      </ThemedText>
+      <ThemedText type="smallBold" style={[styles.rowValue, accent ? { color: accent } : null]}>
+        {value}
+      </ThemedText>
+    </View>
+  );
+}
+
+function Count({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.count}>
+      <ThemedText type="smallBold">{value}</ThemedText>
+      <ThemedText type="code" themeColor="textSecondary">
+        {label}
+      </ThemedText>
+    </View>
+  );
+}
+
+function ResumePreview({ html, onClose }: { html: string; onClose: () => void }) {
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
+
+  return (
+    <View style={styles.previewShell}>
+      <ThemedView type="background" style={styles.previewBar}>
+        <ThemedText type="smallBold">Resume</ThemedText>
+        <View style={styles.previewActions}>
+          <AppButton label="Print / Save as PDF" onPress={() => frameRef.current?.contentWindow?.print()} />
+          <AppButton label="Close" variant="secondary" onPress={onClose} />
+        </View>
+      </ThemedView>
+      {createElement('iframe', {
+        ref: frameRef,
+        srcDoc: html,
+        title: 'Resume preview',
+        style: { flex: 1, width: '100%', border: 'none', backgroundColor: '#ffffff' },
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    overflow: 'hidden',
-  },
-  scrollContent: {
-    flexGrow: 1,
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.four,
-    maxWidth: MaxContentWidth,
     width: '100%',
+    maxWidth: MaxContentWidth,
     alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    justifyContent: 'space-between',
+    gap: Spacing.three,
   },
-  blob: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  blobTop: {
-    top: -140,
-    right: -120,
-    width: 340,
-    height: 340,
-  },
-  blobSide: {
-    top: 380,
-    left: -160,
-    width: 320,
-    height: 320,
-  },
-  header: {
-    gap: Spacing.one,
+  stack: {
+    gap: Spacing.three,
+    flexShrink: 1,
   },
   eyebrow: {
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-  },
-  section: {
-    gap: Spacing.two,
   },
   identityCard: {
     flexDirection: 'row',
@@ -309,30 +256,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   identityCopy: {
     flex: 1,
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
   name: {
     fontFamily: Fonts.serif,
     fontSize: 22,
     lineHeight: 28,
     marginBottom: Spacing.one,
-  },
-  card: {
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: Spacing.four,
-  },
-  sectionLabel: {
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
   },
   factRow: {
     flexDirection: 'row',
@@ -342,6 +280,34 @@ const styles = StyleSheet.create({
   factValue: {
     flexShrink: 1,
     textAlign: 'right',
+  },
+  overview: {
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: Spacing.four,
+  },
+  row: {
+    gap: Spacing.half,
+  },
+  rowValue: {
+    flexShrink: 1,
+  },
+  counts: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    paddingTop: Spacing.one,
+  },
+  count: {
+    flex: 1,
+    gap: Spacing.half,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    alignItems: 'center',
+  },
+  action: {
+    flexGrow: 0,
   },
   previewShell: {
     ...StyleSheet.absoluteFill,

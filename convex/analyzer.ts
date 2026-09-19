@@ -10,7 +10,7 @@ import {
   prettyJson,
   type ChatPick,
 } from './chatgpt';
-import { formatProfile, type StudentProfile } from './profile';
+import { formatProfile, formatProfileLines, type StudentProfile } from './profile';
 import { searchLumaEvents, type LumaEvent } from './luma';
 
 const analyzedEventValidator = v.object({
@@ -170,11 +170,7 @@ async function analyzeWithChatGPT(
   ].join(' ');
   const user = [
     'Student profile:',
-    `- College year: ${profile.collegeYear}`,
-    `- Location: ${profile.location}`,
-    `- Industry interest: ${profile.industry}`,
-    `- Role interest: ${profile.role}`,
-    `- Preferred company: ${profile.preferredCompany}`,
+    ...formatProfileLines(profile),
     '',
     formatActivityLog(history),
     '',

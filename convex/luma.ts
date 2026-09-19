@@ -2,7 +2,7 @@ const LUMA_DISCOVER_URL = 'https://api.luma.com/discover/get-paginated-events';
 const LUMA_BOOTSTRAP_URL = 'https://api.luma.com/discover/bootstrap-page';
 const LUMA_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'AITX-Hackathon/1.0',
+  'User-Agent': 'NorthBound/1.0',
 };
 
 const CITY_ALIASES: Record<string, string> = {

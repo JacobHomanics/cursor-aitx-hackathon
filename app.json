@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "cursor-aitx-hackathon",
+    "name": "North Bound",
     "slug": "cursor-aitx-hackathon",
     "version": "1.0.0",
     "orientation": "default",
@@ -25,8 +25,8 @@
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png",
-      "name": "AITX",
-      "shortName": "AITX",
+      "name": "North Bound",
+      "shortName": "North Bound",
       "display": "standalone",
       "themeColor": "#208AEF",
       "backgroundColor": "#ffffff"

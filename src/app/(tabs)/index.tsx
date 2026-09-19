@@ -1,47 +1,41 @@
-import { Platform, ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedIcon } from '@/components/animated-icon';
 import { AuthCard } from '@/components/auth-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
-import { useBreakpoint, useSurfaceLabel } from '@/hooks/use-breakpoint';
+import { APP_NAME } from '@/constants/app';
+import { BottomTabInset, Fonts, Spacing, WebTabBarHeight } from '@/constants/theme';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 export default function HomeScreen() {
-  const surface = useSurfaceLabel();
   const { isMobileWeb } = useBreakpoint();
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          isMobileWeb && { paddingBottom: WebTabBarHeight + Spacing.five },
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          { paddingBottom: isMobileWeb ? WebTabBarHeight + Spacing.three : BottomTabInset + Spacing.two },
         ]}>
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedView style={styles.heroSection}>
-            <AnimatedIcon />
-            <ThemedText type="title" style={styles.title}>
-              Welcome to&nbsp;AITX
+        <View style={styles.column}>
+          <View style={styles.hero}>
+            <View style={styles.iconWrap}>
+              <View style={styles.iconScale}>
+                <AnimatedIcon />
+              </View>
+            </View>
+            <ThemedText type="title" style={styles.brand}>
+              {APP_NAME}
             </ThemedText>
-            <ThemedView type="backgroundElement" style={styles.surfaceBadge}>
-              <ThemedText type="small" themeColor="textSecondary">
-                Running on {surface}
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
-
-          <ThemedText type="code" style={styles.code}>
-            account
-          </ThemedText>
-
+            <ThemedText type="small" themeColor="textSecondary" style={styles.tagline}>
+              Sign in to start your career path
+            </ThemedText>
+          </View>
           <AuthCard />
-
-          {Platform.OS === 'web' && <WebBadge />}
-        </SafeAreaView>
-      </ScrollView>
+        </View>
+      </SafeAreaView>
     </ThemedView>
   );
 }
@@ -50,37 +44,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingTop: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  heroSection: {
+    paddingHorizontal: Spacing.three,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.four,
+  },
+  column: {
+    width: '100%',
+    maxWidth: 420,
     gap: Spacing.three,
   },
-  title: {
+  hero: {
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  iconWrap: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  iconScale: {
+    transform: [{ scale: 0.5 }],
+  },
+  brand: {
+    fontFamily: Fonts.serif,
+    fontSize: 32,
+    lineHeight: 36,
     textAlign: 'center',
   },
-  surfaceBadge: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  code: {
-    textTransform: 'uppercase',
+  tagline: {
+    textAlign: 'center',
   },
 });
