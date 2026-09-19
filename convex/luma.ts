@@ -9,21 +9,66 @@ const CITY_ALIASES: Record<string, string> = {
   'new york': 'nyc',
   'new york city': 'nyc',
   nyc: 'nyc',
+  brooklyn: 'nyc',
+  buffalo: 'nyc',
+  ithaca: 'nyc',
+  albany: 'nyc',
+  rochester: 'nyc',
+  syracuse: 'nyc',
   'san francisco': 'sf',
   sf: 'sf',
   'bay area': 'sf',
+  berkeley: 'sf',
+  oakland: 'sf',
+  stanford: 'sf',
+  'san jose': 'sf',
   'los angeles': 'la',
   la: 'la',
-  washington: 'dc',
+  irvine: 'la',
   'washington dc': 'dc',
   'washington d.c.': 'dc',
+  'district of columbia': 'dc',
   dc: 'dc',
   'san diego': 'sd',
+  cambridge: 'boston',
+  evanston: 'chicago',
+  urbana: 'chicago',
+  'ann arbor': 'detroit',
+  boulder: 'denver',
+  'college station': 'austin',
+  durham: 'raleigh',
+  charlotte: 'raleigh',
   'sao paulo': 'saopaulo',
   'rio de janeiro': 'rio',
   'hong kong': 'hongkong',
   'cape town': 'capetown',
   'mexico city': 'mexico-city',
+};
+
+const STATE_HUB_SLUGS: Record<string, string> = {
+  arizona: 'phoenix',
+  california: 'sf',
+  colorado: 'denver',
+  'district of columbia': 'dc',
+  florida: 'miami',
+  georgia: 'atlanta',
+  hawaii: 'honolulu',
+  illinois: 'chicago',
+  massachusetts: 'boston',
+  michigan: 'detroit',
+  minnesota: 'minneapolis',
+  nevada: 'las-vegas',
+  'new york': 'nyc',
+  'north carolina': 'raleigh',
+  ohio: 'cincinnati',
+  oregon: 'portland',
+  pennsylvania: 'philadelphia',
+  texas: 'austin',
+  utah: 'salt-lake-city',
+  washington: 'seattle',
+  alberta: 'calgary',
+  'british columbia': 'vancouver',
+  ontario: 'toronto',
 };
 
 export type LumaEvent = {
@@ -52,7 +97,7 @@ export async function searchLumaEvents(
   excludeIds: ReadonlySet<string> = new Set(),
 ): Promise<LumaSearchResult> {
   const place = await resolveLumaPlace(city, state);
-  const slug = place?.slug ?? slugify(city);
+  const slug = place?.slug;
   if (!slug) {
     return { events: [] };
   }
@@ -109,7 +154,12 @@ async function resolveLumaPlace(city: string, state: string) {
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score);
 
-  return scored[0]?.place;
+  if (scored[0]) {
+    return scored[0].place;
+  }
+
+  const hubSlug = STATE_HUB_SLUGS[stateKey];
+  return places.find((place) => place.slug === hubSlug);
 }
 
 async function fetchLumaPlaces() {
@@ -143,6 +193,9 @@ async function fetchLumaEvents(slug: string, query?: string) {
   }
 
   const response = await fetch(url, { headers: LUMA_HEADERS });
+  if (response.status === 404) {
+    return [];
+  }
   if (!response.ok) {
     throw new Error(`Luma events failed (${response.status})`);
   }

@@ -75,7 +75,7 @@ export default function OnboardingScreen() {
   const [error, setError] = useState<string | null>(null);
 
   if (!isLoading && !isAuthenticated) {
-    return <Redirect href="/" />;
+    return <Redirect href="/sign-in" />;
   }
 
   if (user == null) {

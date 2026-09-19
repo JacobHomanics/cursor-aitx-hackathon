@@ -26,7 +26,6 @@ export function usePlannerLoad({
     setBusy(true);
     void load()
       .catch((loadError: unknown) => {
-        started.current = false;
         setError(loadError instanceof Error ? loadError.message : fallbackError);
       })
       .finally(() => {

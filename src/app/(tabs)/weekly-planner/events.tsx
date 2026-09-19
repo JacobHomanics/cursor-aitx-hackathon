@@ -22,9 +22,9 @@ export default function WeeklyEventsScreen() {
 
   return (
     <PlannerFrame>
-      {!isAuthenticated || !user ? (
+      {!user ? (
         <ThemedText type="small" themeColor="textSecondary">
-          Sign in and finish onboarding to build this week's plan.
+          Loading this week's plan…
         </ThemedText>
       ) : (
         <>
@@ -32,9 +32,7 @@ export default function WeeklyEventsScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               {error}
             </ThemedText>
-          ) : null}
-
-          {busy || latest === undefined ? (
+          ) : busy || latest === undefined ? (
             <ThemedText type="small" themeColor="textSecondary">
               Finding events…
             </ThemedText>

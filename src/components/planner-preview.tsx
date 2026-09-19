@@ -60,11 +60,7 @@ export function PlannerPreview() {
         </Link>
       </View>
 
-      {!isAuthenticated ? (
-        <ThemedText themeColor="textSecondary">
-          Sign in to see events, courses, and internships for this week.
-        </ThemedText>
-      ) : loading ? (
+      {loading ? (
         <ThemedText themeColor="textSecondary">Loading this week…</ThemedText>
       ) : (
         <View style={styles.sections}>

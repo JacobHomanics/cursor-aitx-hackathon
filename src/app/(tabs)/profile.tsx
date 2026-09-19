@@ -3,7 +3,6 @@ import { createElement, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AuthCard } from '@/components/auth-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton } from '@/components/ui/app-button';
@@ -74,7 +73,6 @@ export default function ProfileScreen() {
   const company = companyLabel(user);
   const weekLabel = weekWindowLabel();
   const weekItems = thisWeekItems(record);
-  const signedIn = auth.isAuthenticated || isAuthenticated;
   const meta = [year, place, email, phone].filter(Boolean).join(' · ');
   const school = user?.highSchool;
   const gpa = user?.gpa != null ? `GPA ${user.gpa}` : undefined;
@@ -156,57 +154,51 @@ export default function ProfileScreen() {
             </View>
           </ThemedView>
 
-          {!signedIn ? <AuthCard /> : null}
+          <View style={[styles.split, width < 560 && styles.splitStack]}>
+            <ThemedView type="backgroundElement" style={styles.panel}>
+              <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
+                This week · {weekLabel}
+              </ThemedText>
+              <ThemedText type="smallBold" numberOfLines={1}>
+                {weekly.title}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+                {weekly.source === 'logged' && weekItems.length > 0
+                  ? weekItems
+                      .map((item) => `${item.name} · ${formatLoggedDate(item.completedAt)}`)
+                      .join(' · ')
+                  : weekly.detail}
+              </ThemedText>
+            </ThemedView>
+            <ThemedView type="backgroundElement" style={styles.panel}>
+              <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
+                Semester
+              </ThemedText>
+              <ThemedText type="smallBold" numberOfLines={1}>
+                {semester.title}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+                {semester.detail}
+              </ThemedText>
+            </ThemedView>
+          </View>
 
-          {signedIn ? (
-            <>
-              <View style={[styles.split, width < 560 && styles.splitStack]}>
-                <ThemedView type="backgroundElement" style={styles.panel}>
-                  <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
-                    This week · {weekLabel}
-                  </ThemedText>
-                  <ThemedText type="smallBold" numberOfLines={1}>
-                    {weekly.title}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-                    {weekly.source === 'logged' && weekItems.length > 0
-                      ? weekItems
-                          .map((item) => `${item.name} · ${formatLoggedDate(item.completedAt)}`)
-                          .join(' · ')
-                      : weekly.detail}
-                  </ThemedText>
-                </ThemedView>
-                <ThemedView type="backgroundElement" style={styles.panel}>
-                  <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
-                    Semester
-                  </ThemedText>
-                  <ThemedText type="smallBold" numberOfLines={1}>
-                    {semester.title}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-                    {semester.detail}
-                  </ThemedText>
-                </ThemedView>
-              </View>
-
-              <View style={styles.actions}>
-                <View style={styles.actionGrow}>
-                  <AppButton
-                    disabled={pdfBusy}
-                    label={pdfBusy ? 'Opening…' : 'View resume PDF'}
-                    onPress={openPdf}
-                  />
-                </View>
-                <View style={styles.actionGrow}>
-                  <AppButton label="Sign out" variant="secondary" onPress={() => void auth.logout()} />
-                </View>
-              </View>
-              {pdfError ? (
-                <ThemedText type="small" themeColor="textSecondary">
-                  {pdfError}
-                </ThemedText>
-              ) : null}
-            </>
+          <View style={styles.actions}>
+            <View style={styles.actionGrow}>
+              <AppButton
+                disabled={pdfBusy}
+                label={pdfBusy ? 'Opening…' : 'View resume PDF'}
+                onPress={openPdf}
+              />
+            </View>
+            <View style={styles.actionGrow}>
+              <AppButton label="Sign out" variant="secondary" onPress={() => void auth.logout()} />
+            </View>
+          </View>
+          {pdfError ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {pdfError}
+            </ThemedText>
           ) : null}
         </SafeAreaView>
       </ScrollView>
