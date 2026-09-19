@@ -50,3 +50,37 @@ export const store = mutation({
     return await ctx.db.insert('users', profile);
   },
 });
+
+export const completeOnboarding = mutation({
+  args: {
+    collegeYear: v.union(
+      v.literal('first_year'),
+      v.literal('second_year'),
+      v.literal('third_year'),
+      v.literal('fourth_year'),
+      v.literal('fifth_year_plus'),
+      v.literal('graduate'),
+      v.literal('other'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Not authenticated');
+    }
+
+    const existing = await ctx.db
+      .query('users')
+      .withIndex('by_token', (q) => q.eq('tokenIdentifier', identity.tokenIdentifier))
+      .unique();
+
+    if (!existing) {
+      throw new Error('User not found');
+    }
+
+    await ctx.db.patch(existing._id, {
+      collegeYear: args.collegeYear,
+      onboardingCompletedAt: Date.now(),
+    });
+  },
+});

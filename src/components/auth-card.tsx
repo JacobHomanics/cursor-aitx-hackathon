@@ -6,6 +6,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { AppTextField } from '@/components/ui/app-text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { collegeYearLabel } from '@/constants/onboarding';
 import { Spacing } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useLoginWithEmail } from '@/hooks/use-login-with-email';
@@ -65,6 +66,11 @@ function ConfiguredAuthCard() {
       <ThemedText type="small" themeColor="textSecondary">
         {displayName ?? userId}
       </ThemedText>
+      {convexUser?.collegeYear ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          {collegeYearLabel(convexUser.collegeYear)}
+        </ThemedText>
+      ) : null}
       <ThemedText type="code" themeColor="textSecondary">
         Convex {convexStatus?.ok ? 'connected' : 'waiting'}
         {convexUser ? ` · ${convexUser.privyDid}` : ''}

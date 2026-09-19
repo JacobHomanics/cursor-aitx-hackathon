@@ -8,6 +8,18 @@ export default defineSchema({
     email: v.optional(v.string()),
     name: v.optional(v.string()),
     phone: v.optional(v.string()),
+    collegeYear: v.optional(
+      v.union(
+        v.literal('first_year'),
+        v.literal('second_year'),
+        v.literal('third_year'),
+        v.literal('fourth_year'),
+        v.literal('fifth_year_plus'),
+        v.literal('graduate'),
+        v.literal('other'),
+      ),
+    ),
+    onboardingCompletedAt: v.optional(v.number()),
   })
     .index('by_token', ['tokenIdentifier'])
     .index('by_privy_did', ['privyDid']),
