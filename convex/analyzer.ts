@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 
+import { formatActivityLog, loggedIds, type ActivityHistory } from './activity';
 import { internal } from './_generated/api';
 import { action, internalMutation, query } from './_generated/server';
 import {
@@ -113,9 +114,10 @@ export const analyzeEvents = action({
       throw new Error('Finish onboarding so we know your city and state');
     }
 
-    const luma = await searchLumaEvents(user.city, user.state);
+    const history: ActivityHistory = await ctx.runQuery(internal.activity.historyInternal, {});
+    const luma = await searchLumaEvents(user.city, user.state, [], loggedIds(history.events));
     const profile = formatProfile(user);
-    const { analysis, prompt, response } = await analyzeWithChatGPT(profile, luma);
+    const { analysis, prompt, response } = await analyzeWithChatGPT(profile, luma, history);
     const ranked = rankEvents(luma.events, analysis);
     const createdAt = Date.now();
     const result = {
@@ -147,17 +149,19 @@ type ChatExchange = {
 async function analyzeWithChatGPT(
   profile: ReturnType<typeof formatProfile>,
   luma: { placeName?: string; placeSlug?: string; events: LumaEvent[] },
+  history: ActivityHistory,
 ): Promise<ChatExchange> {
   const place = luma.placeName ?? luma.placeSlug ?? profile.location;
   const catalog = luma.events.slice(0, 20);
   const eventLines =
     catalog.length > 0
       ? catalog.map((event, index) => formatEventLine(event, index)).join('\n')
-      : 'No upcoming Luma events were found for this city.';
+      : 'No new upcoming Luma events were found for this city (events the student already attended are excluded).';
   const system = [
     'You match a college student to real public Luma (lu.ma) events near them.',
-    'You will receive their profile and a numbered list of upcoming events.',
+    'You will receive their profile, a log of events they attended and courses they completed, and a numbered list of upcoming events.',
     'Connect the student to those events: name the events in your writeup and explain why each pick fits their year, location, industry, role, or preferred company.',
+    'Use the activity log to see what the student has already done: never recommend something already in it, and prefer events that build on it or cover what it has not touched yet. Say so in the reason when it applies.',
     'Only use events from the list. Do not invent events, dates, or URLs.',
     'Return JSON with:',
     '- summary: 3-6 sentences that name the best matching events and make the profile connection',
@@ -171,6 +175,8 @@ async function analyzeWithChatGPT(
     `- Industry interest: ${profile.industry}`,
     `- Role interest: ${profile.role}`,
     `- Preferred company: ${profile.preferredCompany}`,
+    '',
+    formatActivityLog(history),
     '',
     `Upcoming Luma events near ${place}:`,
     eventLines,

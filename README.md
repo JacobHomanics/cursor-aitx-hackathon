@@ -60,3 +60,7 @@ The Courses tab uses the same profile and ChatGPT flow against public YouTube co
 ```bash
 npx convex env set YOUTUBE_API_KEY <your-youtube-data-api-key>
 ```
+
+## Activity log
+
+Each event and course card has a button to mark it as attended or completed (tap again to undo). These are stored per user in the `activityLog` table (`convex/activity.ts`). On the next analysis, anything already logged is left out of the candidates, and the log (events attended and courses completed) is added to the ChatGPT prompt so it can recommend what builds on what the student has already done.

@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 
+import { formatActivityLog, loggedIds, type ActivityHistory } from './activity';
 import { internal } from './_generated/api';
 import { action, internalMutation, query } from './_generated/server';
 import {
@@ -88,9 +89,10 @@ export const analyzeCourses = action({
       throw new Error('Finish onboarding so we know your industry and role');
     }
 
+    const history: ActivityHistory = await ctx.runQuery(internal.activity.historyInternal, {});
     const profile = formatProfile(user);
-    const catalog = await searchYoutubeCourses(courseQueries(profile));
-    const { analysis, prompt, response } = await analyzeWithChatGPT(profile, catalog);
+    const catalog = await searchYoutubeCourses(courseQueries(profile), loggedIds(history.courses));
+    const { analysis, prompt, response } = await analyzeWithChatGPT(profile, catalog, history);
     const ranked = rankCourses(catalog, analysis.picks);
     const createdAt = Date.now();
     const result = {
@@ -122,15 +124,17 @@ function courseQueries(profile: FormattedProfile) {
 async function analyzeWithChatGPT(
   profile: FormattedProfile,
   catalog: YoutubeCourse[],
+  history: ActivityHistory,
 ): Promise<{ analysis: ChatAnalysis; prompt: string; response: string }> {
   const courseLines =
     catalog.length > 0
       ? catalog.map((course, index) => formatCourseLine(course, index)).join('\n')
-      : 'No YouTube courses were found for this profile.';
+      : 'No new YouTube courses were found for this profile (courses the student already completed are excluded).';
   const system = [
     'You match a college student to real YouTube courses (playlists and long videos).',
-    'You will receive their profile and a numbered list of YouTube courses.',
+    'You will receive their profile, a log of events they attended and courses they completed, and a numbered list of YouTube courses.',
     'Connect the student to those courses: name the courses in your writeup and explain why each pick fits their year, industry, role, or preferred company.',
+    'Use the activity log to see what the student has already done: never recommend something already in it, and prefer courses that build on it (for example a more advanced follow-up) or cover what it has not touched yet. Say so in the reason when it applies.',
     'Only use courses from the list. Do not invent titles or URLs.',
     'Return JSON with:',
     '- summary: 3-6 sentences that name the best matching courses and make the profile connection',
@@ -144,6 +148,8 @@ async function analyzeWithChatGPT(
     `- Industry interest: ${profile.industry}`,
     `- Role interest: ${profile.role}`,
     `- Preferred company: ${profile.preferredCompany}`,
+    '',
+    formatActivityLog(history),
     '',
     'YouTube courses:',
     courseLines,

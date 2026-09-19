@@ -49,6 +49,7 @@ export async function searchLumaEvents(
   city: string,
   state: string,
   queries: string[] = [],
+  excludeIds: ReadonlySet<string> = new Set(),
 ): Promise<LumaSearchResult> {
   const place = await resolveLumaPlace(city, state);
   const slug = place?.slug ?? slugify(city);
@@ -68,7 +69,7 @@ export async function searchLumaEvents(
 
   const byId = new Map<string, LumaEvent>();
   for (const event of [...matched, ...nearby]) {
-    if (!byId.has(event.id)) {
+    if (!byId.has(event.id) && !excludeIds.has(event.id)) {
       byId.set(event.id, event);
     }
   }
