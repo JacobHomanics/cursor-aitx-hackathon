@@ -19,6 +19,9 @@ export default defineSchema({
         v.literal('other'),
       ),
     ),
+    industryInterest: v.optional(v.string()),
+    roleInterest: v.optional(v.string()),
+    preferredCompany: v.optional(v.string()),
     onboardingCompletedAt: v.optional(v.number()),
   })
     .index('by_token', ['tokenIdentifier'])

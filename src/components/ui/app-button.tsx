@@ -11,7 +11,12 @@ type AppButtonProps = PressableProps & {
 
 export function AppButton({ label, variant = 'primary', disabled, ...props }: AppButtonProps) {
   return (
-    <Pressable disabled={disabled} style={({ pressed }) => pressed && styles.pressed} {...props}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      style={({ pressed }) => pressed && styles.pressed}
+      {...props}>
       <ThemedView
         type={variant === 'primary' ? 'backgroundSelected' : 'backgroundElement'}
         style={[styles.button, disabled && styles.disabled]}>

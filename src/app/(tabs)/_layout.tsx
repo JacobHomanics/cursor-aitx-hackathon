@@ -3,6 +3,7 @@ import { useConvexAuth, useQuery } from 'convex/react';
 
 import AppTabs from '@/components/app-tabs';
 import { ThemedView } from '@/components/themed-view';
+import { isOnboardingComplete } from '@/constants/onboarding';
 import { api } from '@convex/_generated/api';
 
 export default function TabsLayout() {
@@ -13,7 +14,7 @@ export default function TabsLayout() {
     return <ThemedView style={{ flex: 1 }} />;
   }
 
-  if (isAuthenticated && user && !user.onboardingCompletedAt) {
+  if (isAuthenticated && user && !isOnboardingComplete(user)) {
     return <Redirect href="/onboarding" />;
   }
 

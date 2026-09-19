@@ -6,7 +6,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { AppTextField } from '@/components/ui/app-text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { collegeYearLabel } from '@/constants/onboarding';
+import { collegeYearLabel, INDUSTRY_INTERESTS, interestLabel, PREFERRED_COMPANIES, ROLE_INTERESTS, type CollegeYear } from '@/constants/onboarding';
 import { Spacing } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useLoginWithEmail } from '@/hooks/use-login-with-email';
@@ -66,10 +66,13 @@ function ConfiguredAuthCard() {
       <ThemedText type="small" themeColor="textSecondary">
         {displayName ?? userId}
       </ThemedText>
-      {convexUser?.collegeYear ? (
-        <ThemedText type="small" themeColor="textSecondary">
-          {collegeYearLabel(convexUser.collegeYear)}
-        </ThemedText>
+      {convexUser ? (
+        <OnboardingSummary
+          collegeYear={convexUser.collegeYear}
+          industryInterest={convexUser.industryInterest}
+          roleInterest={convexUser.roleInterest}
+          preferredCompany={convexUser.preferredCompany}
+        />
       ) : null}
       <ThemedText type="code" themeColor="textSecondary">
         Convex {convexStatus?.ok ? 'connected' : 'waiting'}
@@ -77,6 +80,35 @@ function ConfiguredAuthCard() {
       </ThemedText>
       <AppButton label="Sign out" variant="secondary" onPress={() => void logout()} />
     </ThemedView>
+  );
+}
+
+function OnboardingSummary({
+  collegeYear,
+  industryInterest,
+  roleInterest,
+  preferredCompany,
+}: {
+  collegeYear?: CollegeYear;
+  industryInterest?: string;
+  roleInterest?: string;
+  preferredCompany?: string;
+}) {
+  const summary = [
+    collegeYearLabel(collegeYear),
+    interestLabel(INDUSTRY_INTERESTS, industryInterest),
+    interestLabel(ROLE_INTERESTS, roleInterest),
+    interestLabel(PREFERRED_COMPANIES, preferredCompany),
+  ].filter(Boolean);
+
+  if (summary.length === 0) {
+    return null;
+  }
+
+  return (
+    <ThemedText type="small" themeColor="textSecondary">
+      {summary.join(' · ')}
+    </ThemedText>
   );
 }
 

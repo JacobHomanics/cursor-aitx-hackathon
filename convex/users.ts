@@ -62,11 +62,28 @@ export const completeOnboarding = mutation({
       v.literal('graduate'),
       v.literal('other'),
     ),
+    industryInterest: v.string(),
+    roleInterest: v.string(),
+    preferredCompany: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error('Not authenticated');
+    }
+
+    const industryInterest = args.industryInterest.trim();
+    const roleInterest = args.roleInterest.trim();
+    const preferredCompany = args.preferredCompany.trim();
+    if (!industryInterest || !roleInterest || !preferredCompany) {
+      throw new Error('Industry, role, and preferred company are required');
+    }
+    if (
+      industryInterest.length > 80 ||
+      roleInterest.length > 80 ||
+      preferredCompany.length > 80
+    ) {
+      throw new Error('Answers must be 80 characters or fewer');
     }
 
     const existing = await ctx.db
@@ -80,6 +97,9 @@ export const completeOnboarding = mutation({
 
     await ctx.db.patch(existing._id, {
       collegeYear: args.collegeYear,
+      industryInterest,
+      roleInterest,
+      preferredCompany,
       onboardingCompletedAt: Date.now(),
     });
   },
