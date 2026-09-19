@@ -38,27 +38,10 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="analyzer">
-        <NativeTabs.Trigger.Label>Analyzer</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="weekly-planner">
+        <NativeTabs.Trigger.Label>Weekly Planner</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="courses">
-        <NativeTabs.Trigger.Label>Courses</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf="play.rectangle.fill"
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="internships">
-        <NativeTabs.Trigger.Label>Internships</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf="briefcase.fill"
+          sf="calendar"
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />

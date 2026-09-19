@@ -34,14 +34,8 @@ export default function AppTabs() {
           <TabTrigger name="dashboard" href="/dashboard" asChild>
             <TabButton>Dashboard</TabButton>
           </TabTrigger>
-          <TabTrigger name="analyzer" href="/analyzer" asChild>
-            <TabButton>Analyzer</TabButton>
-          </TabTrigger>
-          <TabTrigger name="courses" href="/courses" asChild>
-            <TabButton>Courses</TabButton>
-          </TabTrigger>
-          <TabTrigger name="internships" href="/internships" asChild>
-            <TabButton>Internships</TabButton>
+          <TabTrigger name="weekly-planner" href="/weekly-planner" asChild>
+            <TabButton>Weekly Planner</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
