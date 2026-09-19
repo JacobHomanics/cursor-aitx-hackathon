@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as analyzer from "../analyzer.js";
+import type * as luma from "../luma.js";
 import type * as status from "../status.js";
 import type * as users from "../users.js";
 
@@ -18,6 +20,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  analyzer: typeof analyzer;
+  luma: typeof luma;
   status: typeof status;
   users: typeof users;
 }>;

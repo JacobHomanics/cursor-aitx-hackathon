@@ -44,3 +44,11 @@ npm run convex:dev   # Convex backend + codegen
 ## Auth flow
 
 Privy issues an ES256 JWT. Convex verifies it in `convex/auth.config.ts` and `convex/users.ts` upserts the signed-in user. Web uses `@privy-io/react-auth`; iOS and Android use `@privy-io/expo`. Supported methods: email, phone, Google, and Twitter.
+
+## Event analyzer
+
+After onboarding, the Analyzer tab sends the student profile (city, state, industry, role, and preferred company) to ChatGPT and matches it with public [Luma](https://lu.ma) events near that city. ChatGPT uses the Convex AI Gateway when it is enabled. Otherwise set `OPENAI_API_KEY` on the Convex deployment:
+
+```bash
+npx convex env set OPENAI_API_KEY <your-openai-key>
+```

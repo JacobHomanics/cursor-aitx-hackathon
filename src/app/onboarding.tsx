@@ -50,7 +50,7 @@ export default function OnboardingScreen() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
   const completeOnboarding = useMutation(api.users.completeOnboarding);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [collegeYear, setCollegeYear] = useState<CollegeYear | null>(null);
   const [city, setCity] = useState('');
   const [region, setRegion] = useState('');
@@ -62,17 +62,16 @@ export default function OnboardingScreen() {
   const [companyCustom, setCompanyCustom] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const previewUnauthenticated = true;
 
-  if (!previewUnauthenticated && !isLoading && !isAuthenticated) {
+  if (!isLoading && !isAuthenticated) {
     return <Redirect href="/" />;
   }
 
-  if (!previewUnauthenticated && user == null) {
+  if (user == null) {
     return <ThemedView style={styles.container} />;
   }
 
-  if (!previewUnauthenticated && user && isOnboardingComplete(user)) {
+  if (isOnboardingComplete(user)) {
     return <Redirect href="/" />;
   }
 
