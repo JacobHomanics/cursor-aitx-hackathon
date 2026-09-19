@@ -19,7 +19,10 @@ export type YoutubeCourse = {
   coverUrl?: string;
 };
 
-export async function searchYoutubeCourses(queries: string[]): Promise<YoutubeCourse[]> {
+export async function searchYoutubeCourses(
+  queries: string[],
+  excludeIds: ReadonlySet<string> = new Set(),
+): Promise<YoutubeCourse[]> {
   const uniqueQueries = [...new Set(queries.map((query) => query.trim()).filter(Boolean))].slice(
     0,
     3,
@@ -48,7 +51,7 @@ export async function searchYoutubeCourses(queries: string[]): Promise<YoutubeCo
     if (course.kind === 'video' && isShortVideo(course.duration)) {
       continue;
     }
-    if (!byId.has(course.id)) {
+    if (!byId.has(course.id) && !excludeIds.has(course.id)) {
       byId.set(course.id, course);
     }
   }

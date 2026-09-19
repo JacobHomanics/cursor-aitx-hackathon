@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CompletionButton } from '@/components/completion-button';
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,6 +20,7 @@ import {
 } from '@/constants/onboarding';
 import { BottomTabInset, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useCompletedItems } from '@/hooks/use-completed-items';
 import { useTheme } from '@/hooks/use-theme';
 import { api } from '@convex/_generated/api';
 
@@ -30,6 +32,7 @@ export default function AnalyzerScreen() {
   const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
   const latest = useQuery(api.analyzer.latest, isAuthenticated ? {} : 'skip');
   const analyzeEvents = useAction(api.analyzer.analyzeEvents);
+  const { completedIds, setItemCompleted } = useCompletedItems('event');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -147,7 +150,12 @@ export default function AnalyzerScreen() {
                     </ThemedText>
                   ) : (
                     latest.events.map((event) => (
-                      <EventCard key={event.id} event={event} />
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        attended={completedIds.has(event.id)}
+                        onAttendedChange={(attended) => setItemCompleted(event.id, attended)}
+                      />
                     ))
                   )}
                 </>
@@ -162,6 +170,8 @@ export default function AnalyzerScreen() {
 
 function EventCard({
   event,
+  attended,
+  onAttendedChange,
 }: {
   event: {
     id: string;
@@ -175,9 +185,11 @@ function EventCard({
     fit?: 'high' | 'medium' | 'low';
     coverUrl?: string;
   };
+  attended: boolean;
+  onAttendedChange: (attended: boolean) => Promise<unknown>;
 }) {
   return (
-    <ThemedView type="backgroundElement" style={styles.eventCard}>
+    <ThemedView type="backgroundElement" style={[styles.eventCard, attended && styles.doneCard]}>
       {event.coverUrl ? (
         <Image source={{ uri: event.coverUrl }} style={styles.cover} contentFit="cover" />
       ) : null}
@@ -208,6 +220,12 @@ function EventCard({
         <ExternalLink href={event.url as `${string}:${string}`}>
           <ThemedText type="linkPrimary">Open on Luma</ThemedText>
         </ExternalLink>
+        <CompletionButton
+          done={attended}
+          todoLabel="I went to this event"
+          doneLabel="Attended"
+          onChange={onAttendedChange}
+        />
       </View>
     </ThemedView>
   );
@@ -273,6 +291,9 @@ const styles = StyleSheet.create({
   eventCard: {
     borderRadius: Spacing.four,
     overflow: 'hidden',
+  },
+  doneCard: {
+    opacity: 0.75,
   },
   cover: {
     width: '100%',

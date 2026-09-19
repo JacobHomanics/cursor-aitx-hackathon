@@ -26,6 +26,30 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+/** Accent palette for the journey dashboard: indigo for the trail, gold for the destination. */
+export const JourneyColors = {
+  light: {
+    accent: '#5B5BD6',
+    accentSoft: 'rgba(91, 91, 214, 0.16)',
+    accentGlow: 'rgba(91, 91, 214, 0.08)',
+    gold: '#E8A020',
+    goldSoft: 'rgba(232, 160, 32, 0.18)',
+    goldGlow: 'rgba(232, 160, 32, 0.09)',
+    onAccent: '#ffffff',
+    track: '#E0E1E6',
+  },
+  dark: {
+    accent: '#8E8CFF',
+    accentSoft: 'rgba(142, 140, 255, 0.22)',
+    accentGlow: 'rgba(142, 140, 255, 0.10)',
+    gold: '#F5C05C',
+    goldSoft: 'rgba(245, 192, 92, 0.22)',
+    goldGlow: 'rgba(245, 192, 92, 0.10)',
+    onAccent: '#0B0B14',
+    track: '#2E3135',
+  },
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

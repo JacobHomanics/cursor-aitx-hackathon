@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as activity from "../activity.js";
 import type * as analyzer from "../analyzer.js";
 import type * as chatgpt from "../chatgpt.js";
 import type * as courses from "../courses.js";
@@ -24,6 +25,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  activity: typeof activity;
   analyzer: typeof analyzer;
   chatgpt: typeof chatgpt;
   courses: typeof courses;
