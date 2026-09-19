@@ -63,7 +63,7 @@ npx convex env set YOUTUBE_API_KEY <your-youtube-data-api-key>
 
 ## Internship analyzer
 
-The Internships tab sends the same student profile (and activity log) to ChatGPT and asks for one internship **job title** to apply for — not a live job listing.
+The Internships tab fetches live public internship postings from [The Muse](https://www.themuse.com/developers/api/v2) (filtered by role, industry, city, and preferred company) and asks ChatGPT to pick the best matches and explain why. It also still returns one recommended internship job title.
 
 ## Activity log
 

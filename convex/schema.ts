@@ -97,6 +97,21 @@ export default defineSchema({
     tokenIdentifier: v.string(),
     title: v.string(),
     summary: v.string(),
+    listings: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          name: v.string(),
+          url: v.string(),
+          company: v.optional(v.string()),
+          location: v.optional(v.string()),
+          category: v.optional(v.string()),
+          publishedAt: v.optional(v.string()),
+          reason: v.optional(v.string()),
+          fit: v.optional(v.union(v.literal('high'), v.literal('medium'), v.literal('low'))),
+        }),
+      ),
+    ),
     createdAt: v.number(),
     prompt: v.optional(v.string()),
     response: v.optional(v.string()),

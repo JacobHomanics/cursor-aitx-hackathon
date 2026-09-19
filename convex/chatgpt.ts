@@ -64,7 +64,12 @@ export function parseChatPicks(content: string, knownIds: Set<string>): ChatPick
       return [];
     }
     const record = pick as { id?: unknown; name?: unknown; reason?: unknown; fit?: unknown };
-    const id = typeof record.id === 'string' ? record.id : undefined;
+    const id =
+      typeof record.id === 'string'
+        ? record.id
+        : typeof record.id === 'number'
+          ? String(record.id)
+          : undefined;
     const name = typeof record.name === 'string' ? record.name.trim() : undefined;
     const reason = typeof record.reason === 'string' ? record.reason.trim() : '';
     const fit =

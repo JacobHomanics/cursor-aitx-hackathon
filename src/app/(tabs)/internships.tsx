@@ -1,8 +1,9 @@
 import { useAction, useConvexAuth, useQuery } from 'convex/react';
 import { useState } from 'react';
-import { Platform, ScrollView, StyleSheet } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton } from '@/components/ui/app-button';
@@ -57,6 +58,7 @@ export default function InternshipsScreen() {
         interestLabel(PREFERRED_COMPANIES, user.preferredCompany),
       ].filter(Boolean)
     : [];
+  const listings = latest?.listings ?? [];
 
   return (
     <ScrollView
@@ -68,14 +70,14 @@ export default function InternshipsScreen() {
         <ThemedView style={styles.header}>
           <ThemedText type="subtitle">Internship analyzer</ThemedText>
           <ThemedText style={styles.centerText} themeColor="textSecondary">
-            We send your profile to ChatGPT and get one internship job title you should apply for.
+            We send your profile to ChatGPT and match it with public internship listings.
           </ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.body}>
           {!isAuthenticated || !user ? (
             <ThemedText type="small" themeColor="textSecondary">
-              Sign in and finish onboarding to get an internship title.
+              Sign in and finish onboarding to get internship listings.
             </ThemedText>
           ) : (
             <>
@@ -88,7 +90,7 @@ export default function InternshipsScreen() {
 
               <AppButton
                 disabled={busy}
-                label={busy ? 'Analyzing…' : latest ? 'Refresh recommendation' : 'Recommend an internship'}
+                label={busy ? 'Analyzing…' : latest ? 'Refresh listings' : 'Find internships'}
                 onPress={() => {
                   setError(null);
                   setBusy(true);
@@ -97,7 +99,7 @@ export default function InternshipsScreen() {
                       setError(
                         recommendError instanceof Error
                           ? recommendError.message
-                          : 'Could not recommend an internship',
+                          : 'Could not find internships',
                       );
                     })
                     .finally(() => {
@@ -137,6 +139,14 @@ export default function InternshipsScreen() {
                       </ThemedText>
                     </Collapsible>
                   ) : null}
+
+                  {listings.length === 0 ? (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      No public internship listings were returned for this profile.
+                    </ThemedText>
+                  ) : (
+                    listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)
+                  )}
                 </>
               ) : null}
             </>
@@ -145,6 +155,69 @@ export default function InternshipsScreen() {
       </ThemedView>
     </ScrollView>
   );
+}
+
+function ListingCard({
+  listing,
+}: {
+  listing: {
+    id: string;
+    name: string;
+    url: string;
+    company?: string;
+    location?: string;
+    category?: string;
+    publishedAt?: string;
+    reason?: string;
+    fit?: 'high' | 'medium' | 'low';
+  };
+}) {
+  const meta = [listing.company, listing.location, listing.category, formatPosted(listing.publishedAt)]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <ThemedView type="backgroundElement" style={styles.listingCard}>
+      <View style={styles.listingBody}>
+        <View style={styles.titleRow}>
+          <ThemedText type="smallBold" style={styles.listingName}>
+            {listing.name}
+          </ThemedText>
+          {listing.fit ? (
+            <ThemedView type="backgroundSelected" style={styles.fitBadge}>
+              <ThemedText type="code" themeColor="textSecondary">
+                {listing.fit}
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+        </View>
+        {meta ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {meta}
+          </ThemedText>
+        ) : null}
+        {listing.reason ? <ThemedText type="small">{listing.reason}</ThemedText> : null}
+        <ExternalLink href={listing.url as `${string}:${string}`}>
+          <ThemedText type="linkPrimary">Open listing</ThemedText>
+        </ExternalLink>
+      </View>
+    </ThemedView>
+  );
+}
+
+function formatPosted(iso?: string) {
+  if (!iso) {
+    return undefined;
+  }
+  try {
+    return `Posted ${new Date(iso).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })}`;
+  } catch {
+    return undefined;
+  }
 }
 
 const styles = StyleSheet.create({
@@ -185,6 +258,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
     borderRadius: Spacing.four,
+  },
+  listingCard: {
+    borderRadius: Spacing.four,
+    overflow: 'hidden',
+  },
+  listingBody: {
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+  },
+  listingName: {
+    flex: 1,
+  },
+  fitBadge: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+    borderRadius: Spacing.two,
   },
   dump: {
     flexShrink: 1,
