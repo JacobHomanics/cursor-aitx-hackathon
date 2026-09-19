@@ -12,6 +12,7 @@ import type * as activity from "../activity.js";
 import type * as analyzer from "../analyzer.js";
 import type * as chatgpt from "../chatgpt.js";
 import type * as courses from "../courses.js";
+import type * as internships from "../internships.js";
 import type * as luma from "../luma.js";
 import type * as profile from "../profile.js";
 import type * as status from "../status.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   analyzer: typeof analyzer;
   chatgpt: typeof chatgpt;
   courses: typeof courses;
+  internships: typeof internships;
   luma: typeof luma;
   profile: typeof profile;
   status: typeof status;

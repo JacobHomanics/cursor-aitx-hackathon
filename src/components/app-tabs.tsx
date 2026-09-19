@@ -45,6 +45,15 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="internships">
+        <NativeTabs.Trigger.Label>Internships</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="briefcase.fill"
+          src={require('@/assets/images/tabIcons/explore.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

@@ -79,10 +79,13 @@ export function parseChatPicks(content: string, knownIds: Set<string>): ChatPick
 }
 
 export function parseChatSummary(content: string, fallback: string) {
+  return parseChatString(content, 'summary', fallback);
+}
+
+export function parseChatString(content: string, key: string, fallback = '') {
   const json = extractJson(content);
-  return typeof json.summary === 'string' && json.summary.trim().length > 0
-    ? json.summary.trim()
-    : fallback;
+  const value = json[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback;
 }
 
 async function requestChatCompletion(

@@ -37,6 +37,9 @@ export default function AppTabs() {
           <TabTrigger name="courses" href="/courses" asChild>
             <TabButton>Courses</TabButton>
           </TabTrigger>
+          <TabTrigger name="internships" href="/internships" asChild>
+            <TabButton>Internships</TabButton>
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
-    gap: Spacing.two,
+    gap: Spacing.one,
     maxWidth: MaxContentWidth,
   },
   brandText: {
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
   },
   tabButtonView: {
     paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.two,
     borderRadius: Spacing.three,
   },
   externalPressable: {

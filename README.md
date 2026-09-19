@@ -61,6 +61,10 @@ The Courses tab uses the same profile and ChatGPT flow against public YouTube co
 npx convex env set YOUTUBE_API_KEY <your-youtube-data-api-key>
 ```
 
+## Internship analyzer
+
+The Internships tab sends the same student profile (and activity log) to ChatGPT and asks for one internship **job title** to apply for — not a live job listing.
+
 ## Activity log
 
 Each event and course card has a button to mark it as attended or completed (tap again to undo). These are stored per user in the `activityLog` table (`convex/activity.ts`). On the next analysis, anything already logged is left out of the candidates, and the log (events attended and courses completed) is added to the ChatGPT prompt so it can recommend what builds on what the student has already done.
