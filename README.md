@@ -36,35 +36,45 @@ npm run web
 ```bash
 npm start            # Expo dev server
 npm run web          # Desktop and mobile web
+npm run export:web   # Production static web build (dist/)
 npm run ios
 npm run android
 npm run convex:dev   # Convex backend + codegen
 ```
 
+## Deploy web on Vercel
+
+The web app is a static Expo export (`expo.web.output` is `static`). `vercel.json` tells Vercel to run `npx expo export -p web` and publish `dist/`.
+
+1. Import this Git repo in [Vercel](https://vercel.com/new). Framework preset should stay **Other** (the config sets `"framework": null`).
+2. Add these Production / Preview environment variables (they are baked in at build time):
+   - `EXPO_PUBLIC_CONVEX_URL` — your Convex **production** URL (`npx convex deploy` / Convex dashboard)
+   - `EXPO_PUBLIC_PRIVY_APP_ID`
+   - `EXPO_PUBLIC_PRIVY_CLIENT_ID`
+3. In the Privy dashboard, allow the Vercel origin (`https://<project>.vercel.app` and any custom domain).
+4. Redeploy after changing `EXPO_PUBLIC_*` values so the new bundle picks them up.
+
+Convex secrets (`PRIVY_APP_ID`, optional `OPENAI_API_KEY` / `YOUTUBE_API_KEY`) stay on the Convex deployment, not on Vercel.
+
 ## Auth flow
 
 Privy issues an ES256 JWT. Convex verifies it in `convex/auth.config.ts` and `convex/users.ts` upserts the signed-in user. Web uses `@privy-io/react-auth`; iOS and Android use `@privy-io/expo`. Supported methods: email, phone, Google, and Twitter.
 
-## Event analyzer
+## Weekly planner
 
-After onboarding, the Analyzer tab sends the student profile (city, state, industry, role, and preferred company) to ChatGPT and matches it with public [Luma](https://lu.ma) events near that city. ChatGPT uses the Convex AI Gateway when it is enabled. Otherwise set `OPENAI_API_KEY` on the Convex deployment:
+After onboarding, Weekly planner loads events, courses, and internships from the student profile (school, location, skills, industry, role, and preferred company). Events come from public [Luma](https://lu.ma) listings near the student’s city. Courses come from public YouTube playlists and long videos. Internships come from live [The Muse](https://www.themuse.com/developers/api/v2) postings.
+
+ChatGPT uses the Convex AI Gateway when it is enabled. Otherwise set `OPENAI_API_KEY` on the Convex deployment:
 
 ```bash
 npx convex env set OPENAI_API_KEY <your-openai-key>
 ```
 
-## Course analyzer
-
-The Courses tab uses the same profile and ChatGPT flow against public YouTube courses (playlists and long videos). A YouTube Data API key is optional:
+A YouTube Data API key is optional:
 
 ```bash
 npx convex env set YOUTUBE_API_KEY <your-youtube-data-api-key>
 ```
-
-## Internship analyzer
-
-The Internships tab fetches live public internship postings from [The Muse](https://www.themuse.com/developers/api/v2) (filtered by role, industry, city, and preferred company) and asks ChatGPT to pick the best matches and explain why. It also still returns one recommended internship job title.
-
 ## Activity log
 
 Each event and course card has a button to mark it as attended or completed (tap again to undo). These are stored per user in the `activityLog` table (`convex/activity.ts`). On the next analysis, anything already logged is left out of the candidates, and the log (events attended and courses completed) is added to the ChatGPT prompt so it can recommend what builds on what the student has already done.
