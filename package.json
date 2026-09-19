@@ -53,8 +53,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "export:web": "expo export -p web",
     "convex:dev": "convex dev",
     "lint": "expo lint"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   },
   "private": true
 }

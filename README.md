@@ -36,10 +36,25 @@ npm run web
 ```bash
 npm start            # Expo dev server
 npm run web          # Desktop and mobile web
+npm run export:web   # Production static web build (dist/)
 npm run ios
 npm run android
 npm run convex:dev   # Convex backend + codegen
 ```
+
+## Deploy web on Vercel
+
+The web app is a static Expo export (`expo.web.output` is `static`). `vercel.json` tells Vercel to run `npx expo export -p web` and publish `dist/`.
+
+1. Import this Git repo in [Vercel](https://vercel.com/new). Framework preset should stay **Other** (the config sets `"framework": null`).
+2. Add these Production / Preview environment variables (they are baked in at build time):
+   - `EXPO_PUBLIC_CONVEX_URL` — your Convex **production** URL (`npx convex deploy` / Convex dashboard)
+   - `EXPO_PUBLIC_PRIVY_APP_ID`
+   - `EXPO_PUBLIC_PRIVY_CLIENT_ID`
+3. In the Privy dashboard, allow the Vercel origin (`https://<project>.vercel.app` and any custom domain).
+4. Redeploy after changing `EXPO_PUBLIC_*` values so the new bundle picks them up.
+
+Convex secrets (`PRIVY_APP_ID`, optional `OPENAI_API_KEY` / `YOUTUBE_API_KEY`) stay on the Convex deployment, not on Vercel.
 
 ## Auth flow
 
