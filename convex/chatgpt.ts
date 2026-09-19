@@ -9,7 +9,7 @@ export type ChatPick = {
   fit: 'high' | 'medium' | 'low';
 };
 
-export async function completeChat(messages: ChatMessage[]) {
+export async function completeChat(messages: ChatMessage[], temperature = 0.4) {
   try {
     const token = await getServiceToken('ai-gateway');
     return await requestChatCompletion(
@@ -17,6 +17,7 @@ export async function completeChat(messages: ChatMessage[]) {
       token,
       'openai/gpt-4o-mini',
       messages,
+      temperature,
     );
   } catch {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -30,6 +31,7 @@ export async function completeChat(messages: ChatMessage[]) {
       apiKey,
       'gpt-4o-mini',
       messages,
+      temperature,
     );
   }
 }
@@ -93,11 +95,25 @@ export function parseChatString(content: string, key: string, fallback = '') {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback;
 }
 
+export function parseChatStringList(content: string, key: string, fallback: string[]) {
+  const json = extractJson(content);
+  const value = json[key];
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  return fallback.map((item, index) => {
+    const next = value[index];
+    return typeof next === 'string' && next.trim().length > 0 ? next.trim() : item;
+  });
+}
+
 async function requestChatCompletion(
   endpoint: string,
   apiKey: string,
   model: string,
   messages: ChatMessage[],
+  temperature: number,
 ) {
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -107,7 +123,7 @@ async function requestChatCompletion(
     },
     body: JSON.stringify({
       model,
-      temperature: 0.4,
+      temperature,
       response_format: { type: 'json_object' },
       messages,
     }),

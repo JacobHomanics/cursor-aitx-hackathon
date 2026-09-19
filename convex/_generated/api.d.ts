@@ -14,6 +14,7 @@ import type * as chatgpt from "../chatgpt.js";
 import type * as courses from "../courses.js";
 import type * as internships from "../internships.js";
 import type * as jobs from "../jobs.js";
+import type * as journey from "../journey.js";
 import type * as luma from "../luma.js";
 import type * as profile from "../profile.js";
 import type * as status from "../status.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   courses: typeof courses;
   internships: typeof internships;
   jobs: typeof jobs;
+  journey: typeof journey;
   luma: typeof luma;
   profile: typeof profile;
   status: typeof status;

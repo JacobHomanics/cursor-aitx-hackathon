@@ -93,6 +93,15 @@ export default defineSchema({
     response: v.optional(v.string()),
   }).index('by_token', ['tokenIdentifier']),
 
+  journeyPlans: defineTable({
+    tokenIdentifier: v.string(),
+    profileKey: v.string(),
+    titles: v.array(v.string()),
+    createdAt: v.number(),
+    prompt: v.optional(v.string()),
+    response: v.optional(v.string()),
+  }).index('by_token', ['tokenIdentifier']),
+
   internshipAnalyses: defineTable({
     tokenIdentifier: v.string(),
     title: v.string(),

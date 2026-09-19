@@ -23,9 +23,8 @@ type TabIconName = {
 };
 
 const TAB_ICONS = {
-  home: { ios: 'house', web: 'home' },
+  home: { ios: 'map', web: 'map' },
   profile: { ios: 'person', web: 'person' },
-  dashboard: { ios: 'map', web: 'map' },
   planner: { ios: 'calendar', web: 'calendar_month' },
 } as const satisfies Record<string, TabIconName>;
 
@@ -41,11 +40,6 @@ export default function AppTabs() {
           <TabTrigger name="home" href="/" asChild>
             <TabButton icon={TAB_ICONS.home} iconOnly={iconOnly}>
               Home
-            </TabButton>
-          </TabTrigger>
-          <TabTrigger name="dashboard" href="/dashboard" asChild>
-            <TabButton icon={TAB_ICONS.dashboard} iconOnly={iconOnly}>
-              Dashboard
             </TabButton>
           </TabTrigger>
           <TabTrigger name="weekly-planner" href="/weekly-planner" asChild>

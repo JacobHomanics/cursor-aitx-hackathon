@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -7,9 +8,9 @@ import { useJourneyColors } from '@/hooks/use-journey-colors';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Vertical distance between the centers of two consecutive stops. */
-const ROW_HEIGHT = 150;
+const ROW_HEIGHT = 168;
 /** Every stop's center sits this far below its row's top, so nodes of different sizes align. */
-const CENTER_Y = 36;
+const CENTER_Y = 42;
 const LINE = 4;
 const CURVE = 28;
 const NODE = 44;
@@ -22,9 +23,11 @@ const LABEL_WIDTH = '42%';
 type JourneyPathProps = {
   goal: JourneyGoal;
   milestones: JourneyMilestone[];
+  currentAnchorRef?: Ref<View>;
+  onCurrentLayout?: () => void;
 };
 
-export function JourneyPath({ goal, milestones }: JourneyPathProps) {
+export function JourneyPath({ goal, milestones, currentAnchorRef, onCurrentLayout }: JourneyPathProps) {
   const colors = useJourneyColors();
 
   // The destination is at the top, so the furthest milestone renders first.
@@ -54,7 +57,12 @@ export function JourneyPath({ goal, milestones }: JourneyPathProps) {
         const isLast = index === stops.length - 1;
 
         return (
-          <View key={milestone.id} style={[styles.row, isLast && styles.lastRow]}>
+          <View
+            key={milestone.id}
+            ref={milestone.status === 'current' ? currentAnchorRef : undefined}
+            collapsable={false}
+            onLayout={milestone.status === 'current' ? onCurrentLayout : undefined}
+            style={[styles.row, isLast && styles.lastRow]}>
             {!isLast && (
               <Connector
                 fromX={xs[index]}
@@ -247,7 +255,7 @@ function MilestoneStop({
         <ThemedText
           type="smallBold"
           themeColor={status === 'upcoming' ? 'textSecondary' : 'text'}
-          numberOfLines={2}
+          numberOfLines={3}
           style={labelOnLeft && styles.textRight}>
           {milestone.title}
         </ThemedText>
@@ -331,7 +339,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     width: LABEL_WIDTH,
-    height: CENTER_Y * 2,
+    minHeight: CENTER_Y * 2,
     justifyContent: 'center',
   },
   chip: {

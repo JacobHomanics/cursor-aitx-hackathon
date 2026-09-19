@@ -3,6 +3,7 @@ import { createElement, useRef, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthCard } from '@/components/auth-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton } from '@/components/ui/app-button';
@@ -110,6 +111,8 @@ export default function ProfileScreen() {
               Your path
             </ThemedText>
           </View>
+
+          <AuthCard />
 
           {!isAuthenticated || !user ? (
             <ThemedView type="backgroundElement" style={styles.card}>

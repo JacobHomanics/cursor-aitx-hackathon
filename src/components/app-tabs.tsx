@@ -16,16 +16,6 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label hidden>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'house', selected: 'house.fill' }}
-          md="home"
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="dashboard">
-        <NativeTabs.Trigger.Label hidden>Dashboard</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
           sf={{ default: 'map', selected: 'map.fill' }}
           md="map"
           src={require('@/assets/images/tabIcons/explore.png')}
