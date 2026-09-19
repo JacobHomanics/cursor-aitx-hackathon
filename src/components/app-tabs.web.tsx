@@ -17,8 +17,21 @@ import { ThemedView } from './themed-view';
 import { Colors, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 
+type TabIconName = {
+  ios: string;
+  web: string;
+};
+
+const TAB_ICONS = {
+  home: { ios: 'house', web: 'home' },
+  profile: { ios: 'person', web: 'person' },
+  dashboard: { ios: 'map', web: 'map' },
+  planner: { ios: 'calendar', web: 'calendar_month' },
+} as const satisfies Record<string, TabIconName>;
+
 export default function AppTabs() {
   const { isDesktopWeb } = useBreakpoint();
+  const iconOnly = !isDesktopWeb;
 
   return (
     <Tabs>
@@ -26,16 +39,24 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList placement={isDesktopWeb ? 'top' : 'bottom'}>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
-          </TabTrigger>
-          <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>Profile</TabButton>
+            <TabButton icon={TAB_ICONS.home} iconOnly={iconOnly}>
+              Home
+            </TabButton>
           </TabTrigger>
           <TabTrigger name="dashboard" href="/dashboard" asChild>
-            <TabButton>Dashboard</TabButton>
+            <TabButton icon={TAB_ICONS.dashboard} iconOnly={iconOnly}>
+              Dashboard
+            </TabButton>
           </TabTrigger>
           <TabTrigger name="weekly-planner" href="/weekly-planner" asChild>
-            <TabButton>Weekly Planner</TabButton>
+            <TabButton icon={TAB_ICONS.planner} iconOnly={iconOnly}>
+              Weekly Planner
+            </TabButton>
+          </TabTrigger>
+          <TabTrigger name="profile" href="/profile" asChild>
+            <TabButton icon={TAB_ICONS.profile} iconOnly={iconOnly}>
+              Profile
+            </TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -43,15 +64,37 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+export function TabButton({
+  children,
+  isFocused,
+  icon,
+  iconOnly = false,
+  ...props
+}: TabTriggerSlotProps & { icon: TabIconName; iconOnly?: boolean }) {
+  const scheme = useColorScheme();
+  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const label = typeof children === 'string' ? children : undefined;
+
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      {...props}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: isFocused }}
+      style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
-          {children}
-        </ThemedText>
+        style={[styles.tabButtonView, iconOnly && styles.tabButtonIconOnly]}>
+        <SymbolView
+          name={icon}
+          size={18}
+          tintColor={isFocused ? colors.text : colors.textSecondary}
+        />
+        {iconOnly ? null : (
+          <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+            {children}
+          </ThemedText>
+        )}
       </ThemedView>
     </Pressable>
   );
@@ -147,6 +190,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
     borderRadius: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  tabButtonIconOnly: {
+    paddingHorizontal: Spacing.three,
   },
   externalPressable: {
     flexDirection: 'row',

@@ -12,9 +12,6 @@ export default function WeeklyPlannerLayout() {
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.chrome}>
         <View style={styles.header}>
-          <ThemedText type="code" themeColor="textSecondary" style={styles.eyebrow}>
-            This week
-          </ThemedText>
           <ThemedText type="subtitle" style={{ fontFamily: Fonts.serif }}>
             Weekly planner
           </ThemedText>
@@ -42,11 +39,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.two,
   },
   header: {
-    gap: Spacing.one,
     alignItems: 'center',
-  },
-  eyebrow: {
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
   },
 });

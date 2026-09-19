@@ -1,13 +1,21 @@
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { CompletionButton } from '@/components/completion-button';
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
-type Fit = 'high' | 'medium' | 'low';
+const OPEN_ICON = { ios: 'arrow.up.right.square', android: 'open_in_new', web: 'open_in_new' } as const;
+const DONE_ICON = { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } as const;
+const TODO_ICON = {
+  ios: 'checkmark.circle',
+  android: 'radio_button_unchecked',
+  web: 'radio_button_unchecked',
+} as const;
 
 export function EventCard({
   event,
@@ -21,8 +29,6 @@ export function EventCard({
     startAt?: string;
     timezone?: string;
     location?: string;
-    reason?: string;
-    fit?: Fit;
     coverUrl?: string;
   };
   attended: boolean;
@@ -34,7 +40,19 @@ export function EventCard({
         <Image source={{ uri: event.coverUrl }} style={styles.cover} contentFit="cover" />
       ) : null}
       <View style={styles.body}>
-        <TitleRow name={event.name} fit={event.fit} />
+        <View style={styles.header}>
+          <ThemedText type="smallBold" style={styles.name}>
+            {event.name}
+          </ThemedText>
+          <CardActions
+            url={event.url}
+            openLabel="Open on Luma"
+            done={attended}
+            todoLabel="I went to this event"
+            doneLabel="Attended, tap to undo"
+            onDoneChange={onAttendedChange}
+          />
+        </View>
         {formatWhen(event.startAt, event.timezone) ? (
           <ThemedText type="small" themeColor="textSecondary">
             {formatWhen(event.startAt, event.timezone)}
@@ -45,16 +63,6 @@ export function EventCard({
             {event.location}
           </ThemedText>
         ) : null}
-        {event.reason ? <ThemedText type="small">{event.reason}</ThemedText> : null}
-        <ExternalLink href={event.url as `${string}:${string}`}>
-          <ThemedText type="linkPrimary">Open on Luma</ThemedText>
-        </ExternalLink>
-        <CompletionButton
-          done={attended}
-          todoLabel="I went to this event"
-          doneLabel="Attended"
-          onChange={onAttendedChange}
-        />
       </View>
     </ThemedView>
   );
@@ -73,8 +81,6 @@ export function CourseCard({
     kind?: 'playlist' | 'video';
     videoCount?: string;
     duration?: string;
-    reason?: string;
-    fit?: Fit;
     coverUrl?: string;
   };
   completed: boolean;
@@ -94,22 +100,24 @@ export function CourseCard({
         <Image source={{ uri: course.coverUrl }} style={styles.cover} contentFit="cover" />
       ) : null}
       <View style={styles.body}>
-        <TitleRow name={course.name} fit={course.fit} />
+        <View style={styles.header}>
+          <ThemedText type="smallBold" style={styles.name}>
+            {course.name}
+          </ThemedText>
+          <CardActions
+            url={course.url}
+            openLabel="Open on YouTube"
+            done={completed}
+            todoLabel="I completed this course"
+            doneLabel="Completed, tap to undo"
+            onDoneChange={onCompletedChange}
+          />
+        </View>
         {meta ? (
           <ThemedText type="small" themeColor="textSecondary">
             {meta}
           </ThemedText>
         ) : null}
-        {course.reason ? <ThemedText type="small">{course.reason}</ThemedText> : null}
-        <ExternalLink href={course.url as `${string}:${string}`}>
-          <ThemedText type="linkPrimary">Open on YouTube</ThemedText>
-        </ExternalLink>
-        <CompletionButton
-          done={completed}
-          todoLabel="I completed this course"
-          doneLabel="Completed"
-          onChange={onCompletedChange}
-        />
       </View>
     </ThemedView>
   );
@@ -126,8 +134,6 @@ export function ListingCard({
     location?: string;
     category?: string;
     publishedAt?: string;
-    reason?: string;
-    fit?: Fit;
   };
 }) {
   const meta = [listing.company, listing.location, listing.category, formatPosted(listing.publishedAt)]
@@ -137,33 +143,64 @@ export function ListingCard({
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
       <View style={styles.body}>
-        <TitleRow name={listing.name} fit={listing.fit} />
+        <View style={styles.header}>
+          <ThemedText type="smallBold" style={styles.name}>
+            {listing.name}
+          </ThemedText>
+          <CardActions url={listing.url} openLabel="Open listing" />
+        </View>
         {meta ? (
           <ThemedText type="small" themeColor="textSecondary">
             {meta}
           </ThemedText>
         ) : null}
-        {listing.reason ? <ThemedText type="small">{listing.reason}</ThemedText> : null}
-        <ExternalLink href={listing.url as `${string}:${string}`}>
-          <ThemedText type="linkPrimary">Open listing</ThemedText>
-        </ExternalLink>
       </View>
     </ThemedView>
   );
 }
 
-function TitleRow({ name, fit }: { name: string; fit?: Fit }) {
+function CardActions({
+  url,
+  openLabel,
+  done,
+  todoLabel,
+  doneLabel,
+  onDoneChange,
+}: {
+  url: string;
+  openLabel: string;
+  done?: boolean;
+  todoLabel?: string;
+  doneLabel?: string;
+  onDoneChange?: (done: boolean) => Promise<unknown>;
+}) {
+  const theme = useTheme();
+  const [pending, setPending] = useState(false);
+
   return (
-    <View style={styles.titleRow}>
-      <ThemedText type="smallBold" style={styles.name}>
-        {name}
-      </ThemedText>
-      {fit ? (
-        <ThemedView type="backgroundSelected" style={styles.fitBadge}>
-          <ThemedText type="code" themeColor="textSecondary">
-            {fit}
-          </ThemedText>
-        </ThemedView>
+    <View style={styles.actions}>
+      <ExternalLink href={url as `${string}:${string}`} asChild>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={openLabel}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <SymbolView name={OPEN_ICON} size={18} tintColor={theme.text} />
+        </Pressable>
+      </ExternalLink>
+      {onDoneChange && todoLabel && doneLabel ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={done ? doneLabel : todoLabel}
+          disabled={pending}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed, pending && styles.disabled]}
+          onPress={() => {
+            setPending(true);
+            void onDoneChange(!done).finally(() => {
+              setPending(false);
+            });
+          }}>
+          <SymbolView name={done ? DONE_ICON : TODO_ICON} size={18} tintColor={theme.text} />
+        </Pressable>
       ) : null}
     </View>
   );
@@ -220,7 +257,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
   },
-  titleRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.two,
@@ -228,9 +265,22 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
   },
-  fitBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  iconButton: {
+    width: Spacing.four,
+    height: Spacing.four,
     borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });
