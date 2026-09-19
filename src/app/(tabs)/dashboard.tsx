@@ -1,10 +1,12 @@
+import { useConvexAuth, useQuery } from 'convex/react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { JourneyPath } from '@/components/journey-path';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { SAMPLE_GOAL, SAMPLE_MILESTONES } from '@/constants/journey';
+import { buildJourney } from '@/constants/journey';
+import type { CollegeYear } from '@/constants/onboarding';
 import {
   BottomTabInset,
   Fonts,
@@ -14,15 +16,27 @@ import {
 } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useJourneyColors } from '@/hooks/use-journey-colors';
+import { api } from '@convex/_generated/api';
 
 export default function DashboardScreen() {
   const colors = useJourneyColors();
   const { isMobileWeb } = useBreakpoint();
+  const { isAuthenticated } = useConvexAuth();
+  const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
 
-  const total = SAMPLE_MILESTONES.length;
-  const done = SAMPLE_MILESTONES.filter((milestone) => milestone.status === 'done').length;
-  const percent = total === 0 ? 0 : Math.round((done / total) * 100);
-  const next = SAMPLE_MILESTONES.find((milestone) => milestone.status === 'current');
+  const { goal, milestones } = buildJourney(
+    user
+      ? {
+          collegeYear: user.collegeYear as CollegeYear | undefined,
+          city: user.city,
+          state: user.state,
+          roleInterest: user.roleInterest,
+          preferredCompany: user.preferredCompany,
+        }
+      : null,
+  );
+
+  const next = milestones.find((milestone) => milestone.status === 'upcoming');
 
   return (
     <ThemedView style={styles.container}>
@@ -32,7 +46,7 @@ export default function DashboardScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          isMobileWeb && { paddingBottom: WebTabBarHeight + Spacing.five },
+          isMobileWeb && { paddingBottom: WebTabBarHeight + Spacing.six },
         ]}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
@@ -45,25 +59,15 @@ export default function DashboardScreen() {
           </View>
 
           <ThemedView type="backgroundElement" style={styles.progressCard}>
-            <View style={styles.progressRow}>
-              <ThemedText type="smallBold">
-                {done} of {total} milestones
-              </ThemedText>
-              <ThemedText type="smallBold" style={{ color: colors.accent }}>
-                {percent}%
-              </ThemedText>
-            </View>
-            <View style={[styles.track, { backgroundColor: colors.track }]}>
-              <View style={[styles.fill, { width: `${percent}%`, backgroundColor: colors.accent }]} />
-            </View>
+            <ThemedText type="smallBold">Four-year checkpoints</ThemedText>
             {next && (
               <ThemedText type="small" themeColor="textSecondary">
-                Next up: {next.title}
+                Next up: {next.title} · {next.timeframe}
               </ThemedText>
             )}
           </ThemedView>
 
-          <JourneyPath goal={SAMPLE_GOAL} milestones={SAMPLE_MILESTONES} />
+          <JourneyPath goal={goal} milestones={milestones} />
         </SafeAreaView>
       </ScrollView>
     </ThemedView>
@@ -83,7 +87,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     gap: Spacing.four,
     paddingTop: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.four,
+    paddingBottom: BottomTabInset + Spacing.six,
     maxWidth: MaxContentWidth,
     width: '100%',
     alignSelf: 'center',
@@ -115,19 +119,5 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Spacing.four,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  track: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: 4,
   },
 });

@@ -35,7 +35,7 @@ export function JourneyPath({ goal, milestones }: JourneyPathProps) {
     <View style={styles.path}>
       <View style={styles.goalCopy}>
         <ThemedText type="code" style={[styles.eyebrow, { color: colors.gold }]}>
-          Long-term goal
+          Graduation
         </ThemedText>
         <ThemedText type="subtitle" style={[styles.goalTitle, { fontFamily: Fonts.serif }]}>
           {goal.title}
@@ -176,7 +176,7 @@ function GoalNode() {
 
 const STATUS_LABEL = {
   done: 'Completed',
-  current: 'In progress',
+  current: 'You are here',
   upcoming: 'Upcoming',
 } as const;
 
@@ -240,7 +240,7 @@ function MilestoneStop({
         {status === 'current' && (
           <View style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
             <ThemedText type="code" style={[styles.chipText, { color: colors.accent }]}>
-              In progress
+              You are here
             </ThemedText>
           </View>
         )}
