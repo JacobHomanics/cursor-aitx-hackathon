@@ -7,18 +7,13 @@ import { AuthCard } from '@/components/auth-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton } from '@/components/ui/app-button';
-import {
-  BottomTabInset,
-  Fonts,
-  MaxContentWidth,
-  Spacing,
-  WebTabBarHeight,
-} from '@/constants/theme';
+import { buildJourney, yearlyGoals } from '@/constants/journey';
+import type { CollegeYear } from '@/constants/onboarding';
+import { BottomTabInset, Fonts, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useJourneyColors } from '@/hooks/use-journey-colors';
 import {
-  broadGoalsFor,
   companyLabel,
   displayNameFor,
   formatLoggedDate,
@@ -49,11 +44,27 @@ export default function ProfileScreen() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
-  const courses: ResumeItem[] = (history?.courses ?? []).map((course) => ({ ...course }));
-  const events: ResumeItem[] = (history?.events ?? []).map((event) => ({ ...event }));
-  const record = [...courses, ...events];
+  const journeyProfile = user
+    ? {
+        collegeYear: user.collegeYear as CollegeYear | undefined,
+        city: user.city,
+        state: user.state,
+        country: user.country,
+        industryInterest: user.industryInterest,
+        roleInterest: user.roleInterest,
+        preferredCompany: user.preferredCompany,
+      }
+    : null;
+  const { goal: graduation } = buildJourney(journeyProfile);
+  const years = yearlyGoals(journeyProfile);
+  const internships: ResumeItem[] = (history?.internships ?? []).map((item) => ({ ...item }));
+  const courses: ResumeItem[] = (history?.courses ?? []).map((item) => ({ ...item }));
+  const events: ResumeItem[] = (history?.events ?? []).map((item) => ({ ...item }));
+  const record = [...internships, ...courses, ...events];
   const name = displayNameFor(user, auth.displayName);
-  const standing = standingFor(courses.length, events.length);
+  const standing = standingFor(courses.length, events.length, internships.length);
+  const weekly = weeklyAchievementFor(record, user);
+  const semester = semesterGoalFor(user);
   const email = user?.email ?? auth.email;
   const phone = user?.phone ?? auth.phone;
   const year = yearLabel(user);
@@ -61,13 +72,12 @@ export default function ProfileScreen() {
   const role = roleLabel(user);
   const industry = industryLabel(user);
   const company = companyLabel(user);
-  const goals = broadGoalsFor(user);
-  const weekly = weeklyAchievementFor(record, user);
-  const semester = semesterGoalFor(user);
   const weekLabel = weekWindowLabel();
   const weekItems = thisWeekItems(record);
   const signedIn = auth.isAuthenticated || isAuthenticated;
   const meta = [year, place, email, phone].filter(Boolean).join(' · ');
+  const school = user?.highSchool;
+  const gpa = user?.gpa != null ? `GPA ${user.gpa}` : undefined;
 
   const openPdf = () => {
     const html = resumeHtml({
@@ -76,11 +86,17 @@ export default function ProfileScreen() {
       phone,
       place,
       year,
+      school,
+      gpa,
+      skills: user?.hardSkills?.length
+        ? user.hardSkills.map((skill) => `${skill.name} (${skill.level}/5)`).join(', ')
+        : undefined,
       standing,
-      goals,
+      graduation,
+      yearly: years,
       weekly,
-      semester,
       weekLabel,
+      internships,
       courses,
       events,
     });
@@ -134,6 +150,8 @@ export default function ProfileScreen() {
                 <Chip label="Role" value={role} tint={colors.accentSoft} />
                 <Chip label="Industry" value={industry} tint={colors.accentSoft} />
                 <Chip label="Company" value={company} tint={colors.goldSoft} />
+                <Chip label="School" value={school} tint={colors.accentSoft} />
+                <Chip label="GPA" value={gpa} tint={colors.goldSoft} />
               </View>
             </View>
           </ThemedView>
@@ -205,10 +223,7 @@ function ResumePreview({ html, onClose }: { html: string; onClose: () => void })
       <ThemedView type="background" style={styles.previewBar}>
         <ThemedText type="smallBold">Resume</ThemedText>
         <View style={styles.previewActions}>
-          <AppButton
-            label="Print / Save as PDF"
-            onPress={() => frameRef.current?.contentWindow?.print()}
-          />
+          <AppButton label="Print / Save as PDF" onPress={() => frameRef.current?.contentWindow?.print()} />
           <AppButton label="Close" variant="secondary" onPress={onClose} />
         </View>
       </ThemedView>
@@ -278,9 +293,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

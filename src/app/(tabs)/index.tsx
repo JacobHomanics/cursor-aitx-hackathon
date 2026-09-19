@@ -39,6 +39,7 @@ export default function HomeScreen() {
         collegeYear: user.collegeYear as CollegeYear | undefined,
         city: user.city,
         state: user.state,
+        country: user.country,
         industryInterest: user.industryInterest,
         roleInterest: user.roleInterest,
         preferredCompany: user.preferredCompany,

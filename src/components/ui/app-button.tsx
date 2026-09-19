@@ -28,9 +28,9 @@ export function AppButton({ label, variant = 'primary', disabled, ...props }: Ap
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.three,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 12,
     alignItems: 'center',
   },
   disabled: {

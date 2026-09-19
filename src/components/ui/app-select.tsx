@@ -12,31 +12,40 @@ import { useTheme } from '@/hooks/use-theme';
 type AppSelectProps = {
   options: readonly InterestOption[];
   value: string | null;
-  customValue: string;
+  customValue?: string;
   placeholder: string;
-  customPlaceholder: string;
+  customPlaceholder?: string;
+  searchable?: boolean;
+  allowCustom?: boolean;
   onChange: (value: string) => void;
-  onCustomChange: (value: string) => void;
+  onCustomChange?: (value: string) => void;
 };
 
 export function AppSelect({
   options,
   value,
-  customValue,
+  customValue = '',
   placeholder,
-  customPlaceholder,
+  customPlaceholder = 'Type your own',
+  searchable = false,
+  allowCustom = true,
   onChange,
   onCustomChange,
 }: AppSelectProps) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const isCustom = value === ENTER_OWN_VALUE;
+  const [query, setQuery] = useState('');
+  const isCustom = allowCustom && value === ENTER_OWN_VALUE;
   const selectedLabel = isCustom
     ? 'Enter your own'
     : options.find((option) => option.value === value)?.label;
+  const filtered = searchable
+    ? options.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : options;
 
   const select = (next: string) => {
     onChange(next);
+    setQuery('');
     setIsOpen(false);
   };
 
@@ -66,7 +75,18 @@ export function AppSelect({
             keyboardShouldPersistTaps="handled"
             nestedScrollEnabled
             style={styles.menuScroll}>
-          {options.map((option) => {
+          {searchable ? (
+            <View style={styles.search}>
+              <AppTextField
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={setQuery}
+                placeholder="Search"
+                value={query}
+              />
+            </View>
+          ) : null}
+          {filtered.map((option) => {
             const selected = value === option.value;
             return (
               <Pressable
@@ -85,19 +105,21 @@ export function AppSelect({
               </Pressable>
             );
           })}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Enter your own"
-            onPress={() => select(ENTER_OWN_VALUE)}
-            style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedView
-              type={isCustom ? 'backgroundSelected' : 'backgroundElement'}
-              style={styles.option}>
-              <ThemedText type="smallBold" themeColor={isCustom ? 'text' : 'textSecondary'}>
-                Enter your own
-              </ThemedText>
-            </ThemedView>
-          </Pressable>
+          {allowCustom ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Enter your own"
+              onPress={() => select(ENTER_OWN_VALUE)}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <ThemedView
+                type={isCustom ? 'backgroundSelected' : 'backgroundElement'}
+                style={styles.option}>
+                <ThemedText type="smallBold" themeColor={isCustom ? 'text' : 'textSecondary'}>
+                  Enter your own
+                </ThemedText>
+              </ThemedView>
+            </Pressable>
+          ) : null}
           </ScrollView>
         </ThemedView>
       ) : null}
@@ -106,7 +128,7 @@ export function AppSelect({
         <AppTextField
           autoFocus
           maxLength={MAX_INTEREST_LENGTH}
-          onChangeText={onCustomChange}
+          onChangeText={(text) => onCustomChange?.(text)}
           placeholder={customPlaceholder}
           value={customValue}
         />
@@ -120,10 +142,10 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   trigger: {
-    minHeight: 48,
+    minHeight: 40,
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.one,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -134,10 +156,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   menuScroll: {
-    maxHeight: 280,
+    maxHeight: 160,
+  },
+  search: {
+    padding: Spacing.two,
   },
   option: {
-    paddingVertical: Spacing.three,
+    paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
   },
   pressed: {

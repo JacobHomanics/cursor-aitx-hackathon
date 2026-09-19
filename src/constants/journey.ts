@@ -25,12 +25,14 @@ export type JourneyProfile = {
   collegeYear?: CollegeYear;
   city?: string;
   state?: string;
+  country?: string;
   industryInterest?: string;
   roleInterest?: string;
   preferredCompany?: string;
 };
 
 const YEARS_UNTIL_GRADUATION: Record<CollegeYear, number> = {
+  not_yet: 4,
   first_year: 4,
   second_year: 3,
   third_year: 2,
@@ -195,7 +197,7 @@ export function buildJourney(
 } {
   const now = options.now ?? new Date();
   const year = profile?.collegeYear;
-  const place = locationLabel(profile?.city, profile?.state);
+  const place = locationLabel(profile?.city, profile?.state, profile?.country);
   const role = interestLabel(ROLE_INTERESTS, profile?.roleInterest);
   const company = interestLabel(PREFERRED_COMPANIES, profile?.preferredCompany);
   const gradYear = graduationYear(year, now);
@@ -228,3 +230,53 @@ function formatAcademicYear(start: number) {
   return `${start}–${String(start + 1).slice(-2)}`;
 }
 
+export type YearlyGoal = {
+  id: string;
+  yearLabel: string;
+  title: string;
+  detail: string;
+  status: MilestoneStatus;
+};
+
+export function yearlyGoals(profile: JourneyProfile | null | undefined, now = new Date()): YearlyGoal[] {
+  const calendar = academicCalendar(now);
+  const remaining = profile?.collegeYear ? YEARS_UNTIL_GRADUATION[profile.collegeYear] : 4;
+  const count = Math.max(remaining, 1);
+  const role = interestLabel(ROLE_INTERESTS, profile?.roleInterest);
+  const company = interestLabel(PREFERRED_COMPANIES, profile?.preferredCompany);
+
+  return Array.from({ length: count }, (_, index) => {
+    const start = calendar.academicStart + index;
+    const yearLabel = `${start}–${String(start + 1).slice(-2)}`;
+    const isCurrent = index === 0;
+    const isGraduationYear = index === count - 1;
+
+    if (isGraduationYear) {
+      return {
+        id: `year-${start}`,
+        yearLabel,
+        title: role && company ? `${role} at ${company}` : 'Full-time offer',
+        detail: `Graduation year — turn internships, courses, and events into an offer.`,
+        status: isCurrent ? 'current' : 'upcoming',
+      };
+    }
+
+    if (index === count - 2) {
+      return {
+        id: `year-${start}`,
+        yearLabel,
+        title: 'Land a summer internship',
+        detail: role ? `A ${role} internship that compounds toward graduation.` : 'A relevant internship.',
+        status: isCurrent ? 'current' : 'upcoming',
+      };
+    }
+
+    return {
+      id: `year-${start}`,
+      yearLabel,
+      title: isCurrent ? 'This academic year' : 'Build proof',
+      detail: 'Complete courses, attend events, and ship work that belongs on a resume.',
+      status: isCurrent ? 'current' : 'upcoming',
+    };
+  });
+}

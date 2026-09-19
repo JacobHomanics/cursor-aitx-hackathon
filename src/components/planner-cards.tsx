@@ -125,6 +125,8 @@ export function CourseCard({
 
 export function ListingCard({
   listing,
+  completed,
+  onCompletedChange,
 }: {
   listing: {
     id: string;
@@ -135,19 +137,28 @@ export function ListingCard({
     category?: string;
     publishedAt?: string;
   };
+  completed?: boolean;
+  onCompletedChange?: (completed: boolean) => Promise<unknown>;
 }) {
   const meta = [listing.company, listing.location, listing.category, formatPosted(listing.publishedAt)]
     .filter(Boolean)
     .join(' · ');
 
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
+    <ThemedView type="backgroundElement" style={[styles.card, completed && styles.doneCard]}>
       <View style={styles.body}>
         <View style={styles.header}>
           <ThemedText type="smallBold" style={styles.name}>
             {listing.name}
           </ThemedText>
-          <CardActions url={listing.url} openLabel="Open listing" />
+          <CardActions
+            url={listing.url}
+            openLabel="Open listing"
+            done={completed}
+            todoLabel={onCompletedChange ? 'I completed this internship' : undefined}
+            doneLabel={onCompletedChange ? 'Completed, tap to undo' : undefined}
+            onDoneChange={onCompletedChange}
+          />
         </View>
         {meta ? (
           <ThemedText type="small" themeColor="textSecondary">

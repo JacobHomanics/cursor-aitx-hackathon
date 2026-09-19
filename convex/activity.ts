@@ -8,7 +8,7 @@ import {
   type QueryCtx,
 } from './_generated/server';
 
-export type ActivityKind = 'event' | 'course';
+export type ActivityKind = 'event' | 'course' | 'internship';
 
 export type ActivityEntry = {
   kind: ActivityKind;
@@ -22,9 +22,10 @@ export type ActivityEntry = {
 export type ActivityHistory = {
   events: ActivityEntry[];
   courses: ActivityEntry[];
+  internships: ActivityEntry[];
 };
 
-const kindValidator = v.union(v.literal('event'), v.literal('course'));
+const kindValidator = v.union(v.literal('event'), v.literal('course'), v.literal('internship'));
 
 /** Read cap per kind. Enough to exclude everything the student has ever logged. */
 const MAX_ENTRIES = 500;
@@ -48,7 +49,7 @@ export const historyInternal = internalQuery({
   handler: async (ctx): Promise<ActivityHistory> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      return { events: [], courses: [] };
+      return { events: [], courses: [], internships: [] };
     }
 
     return await loadHistory(ctx, identity.tokenIdentifier);
@@ -104,8 +105,9 @@ export const setCompleted = mutation({
 export function formatActivityLog(history: ActivityHistory) {
   const events = history.events.slice(0, PROMPT_ENTRIES);
   const courses = history.courses.slice(0, PROMPT_ENTRIES);
-  if (events.length === 0 && courses.length === 0) {
-    return 'Activity log: the student has not logged any events or courses yet.';
+  const internships = history.internships.slice(0, PROMPT_ENTRIES);
+  if (events.length === 0 && courses.length === 0 && internships.length === 0) {
+    return 'Activity log: the student has not logged any events, courses, or internships yet.';
   }
 
   const lines = ['Activity log (already done, most recent first):'];
@@ -114,6 +116,9 @@ export function formatActivityLog(history: ActivityHistory) {
   }
   if (courses.length > 0) {
     lines.push('Courses completed:', ...courses.map(formatLogLine));
+  }
+  if (internships.length > 0) {
+    lines.push('Internships completed:', ...internships.map(formatLogLine));
   }
   return lines.join('\n');
 }
@@ -129,11 +134,12 @@ function formatLogLine(entry: ActivityEntry) {
 }
 
 async function loadHistory(ctx: QueryCtx, tokenIdentifier: string): Promise<ActivityHistory> {
-  const [events, courses] = await Promise.all([
+  const [events, courses, internships] = await Promise.all([
     loadKind(ctx, tokenIdentifier, 'event'),
     loadKind(ctx, tokenIdentifier, 'course'),
+    loadKind(ctx, tokenIdentifier, 'internship'),
   ]);
-  return { events, courses };
+  return { events, courses, internships };
 }
 
 async function loadKind(
@@ -180,18 +186,34 @@ async function findItem(
     };
   }
 
+  if (kind === 'course') {
+    const analysis = await ctx.db
+      .query('courseAnalyses')
+      .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
+      .unique();
+    const course = analysis?.courses.find((entry) => entry.id === itemId);
+    if (!course) {
+      return null;
+    }
+    const type = course.kind === 'playlist' ? 'Playlist' : course.kind === 'video' ? 'Video' : undefined;
+    return {
+      name: course.name,
+      url: course.url,
+      detail: [type, course.channel].filter(Boolean).join(' · ') || undefined,
+    };
+  }
+
   const analysis = await ctx.db
-    .query('courseAnalyses')
+    .query('internshipAnalyses')
     .withIndex('by_token', (q) => q.eq('tokenIdentifier', tokenIdentifier))
     .unique();
-  const course = analysis?.courses.find((entry) => entry.id === itemId);
-  if (!course) {
+  const listing = analysis?.listings?.find((entry) => entry.id === itemId);
+  if (!listing) {
     return null;
   }
-  const type = course.kind === 'playlist' ? 'Playlist' : course.kind === 'video' ? 'Video' : undefined;
   return {
-    name: course.name,
-    url: course.url,
-    detail: [type, course.channel].filter(Boolean).join(' · ') || undefined,
+    name: listing.name,
+    url: listing.url,
+    detail: [listing.company, listing.location].filter(Boolean).join(' · ') || undefined,
   };
 }

@@ -14,19 +14,17 @@ import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
+import { APP_NAME } from '@/constants/app';
 import { Colors, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-
-type TabIconName = {
-  ios: string;
-  web: string;
-};
 
 const TAB_ICONS = {
   home: { ios: 'map', web: 'map' },
   profile: { ios: 'person', web: 'person' },
   planner: { ios: 'calendar', web: 'calendar_month' },
-} as const satisfies Record<string, TabIconName>;
+} as const;
+
+type TabIconName = (typeof TAB_ICONS)[keyof typeof TAB_ICONS];
 
 export default function AppTabs() {
   const { isDesktopWeb } = useBreakpoint();
@@ -115,7 +113,7 @@ export function CustomTabList({ placement, ...props }: CustomTabListProps) {
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         {isDesktop ? (
           <ThemedText type="smallBold" style={styles.brandText}>
-            AITX
+            {APP_NAME}
           </ThemedText>
         ) : null}
 

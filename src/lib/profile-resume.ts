@@ -13,22 +13,45 @@ export type ProfileUser = {
   email?: string;
   phone?: string;
   collegeYear?: CollegeYear;
+  highSchool?: string;
+  gpa?: number;
+  dateOfBirth?: string;
   city?: string;
   state?: string;
+  country?: string;
   industryInterest?: string;
   roleInterest?: string;
   preferredCompany?: string;
+  hardSkills?: { name: string; level: number }[];
+  softSkills?: {
+    communication: number;
+    teamwork: number;
+    problemSolving: number;
+    timeManagement: number;
+    adaptability: number;
+    leadership: number;
+  };
   onboardingCompletedAt?: number;
 };
 
 export type ResumeItem = {
-  kind: 'event' | 'course';
+  kind: 'event' | 'course' | 'internship';
   itemId: string;
   name: string;
   url: string;
   detail?: string;
   completedAt: number;
 };
+
+export function kindLabel(kind: ResumeItem['kind']) {
+  if (kind === 'course') {
+    return 'Course';
+  }
+  if (kind === 'internship') {
+    return 'Internship';
+  }
+  return 'Event';
+}
 
 export type ResumeStanding = {
   label: string;
@@ -76,7 +99,48 @@ export function yearLabel(user: ProfileUser | null | undefined) {
 }
 
 export function placeLabel(user: ProfileUser | null | undefined) {
-  return locationLabel(user?.city, user?.state);
+  return locationLabel(user?.city, user?.state, user?.country);
+}
+
+export function briefProfileFor(
+  user: ProfileUser | null | undefined,
+  standing: ResumeStanding,
+  graduationTitle: string,
+  thisYearTitle: string,
+  counts: { internships: number; courses: number; events: number },
+) {
+  const year = yearLabel(user);
+  const place = placeLabel(user);
+  const role = roleLabel(user);
+  const industry = industryLabel(user);
+  const company = companyLabel(user);
+  const school = user?.highSchool?.trim();
+  const gpa = user?.gpa != null ? `GPA ${user.gpa}` : null;
+  const skills = user?.hardSkills?.length
+    ? user.hardSkills
+        .slice(0, 4)
+        .map((skill) => `${skill.name} ${skill.level}/5`)
+        .join(', ')
+    : null;
+  const who = [year, place].filter(Boolean).join(' in ');
+  const schoolBit = [school, gpa].filter(Boolean).join(', ');
+  const aim = [role, industry ? `in ${industry}` : null, company ? `toward ${company}` : null]
+    .filter(Boolean)
+    .join(' ');
+  const activity = [
+    counts.internships ? `${counts.internships} internship${counts.internships === 1 ? '' : 's'}` : null,
+    counts.courses ? `${counts.courses} course${counts.courses === 1 ? '' : 's'}` : null,
+    counts.events ? `${counts.events} event${counts.events === 1 ? '' : 's'}` : null,
+  ].filter(Boolean);
+
+  const lead = who
+    ? `${who}${schoolBit ? ` · ${schoolBit}` : ''}${aim ? `, focused on ${aim}` : ''}.`
+    : aim
+      ? `Focused on ${aim}.`
+      : 'Profile still filling in.';
+  const skillBit = skills ? ` Skills: ${skills}.` : '';
+  const work = activity.length > 0 ? ` Logged ${activity.join(', ')}.` : '';
+  return `${lead}${skillBit} Graduation target: ${graduationTitle}. This year: ${thisYearTitle}. ${standing.label}.${work}`;
 }
 
 export function headlineFor(user: ProfileUser | null | undefined) {
@@ -88,25 +152,29 @@ export function headlineFor(user: ProfileUser | null | undefined) {
   return role ?? company ?? 'Building a career path';
 }
 
-export function standingFor(courseCount: number, eventCount: number): ResumeStanding {
-  const total = courseCount + eventCount;
+export function standingFor(
+  courseCount: number,
+  eventCount: number,
+  internshipCount = 0,
+): ResumeStanding {
+  const total = courseCount + eventCount + internshipCount;
   if (total === 0) {
     return {
       label: 'Getting started',
-      detail: 'Log a course or event to start filling in this resume.',
+      detail: 'Log a course, event, or internship to start filling in this resume.',
       level: 'starting',
     };
   }
   if (total < 4) {
     return {
       label: 'Building momentum',
-      detail: `${courseCount} course${courseCount === 1 ? '' : 's'} · ${eventCount} event${eventCount === 1 ? '' : 's'} on record.`,
+      detail: `${courseCount} course${courseCount === 1 ? '' : 's'} · ${internshipCount} internship${internshipCount === 1 ? '' : 's'} · ${eventCount} event${eventCount === 1 ? '' : 's'}.`,
       level: 'building',
     };
   }
   return {
     label: 'On track',
-    detail: `${courseCount} courses completed and ${eventCount} events attended.`,
+    detail: `${courseCount} courses completed, ${internshipCount} internship${internshipCount === 1 ? '' : 's'}, ${eventCount} events attended.`,
     level: 'active',
   };
 }
@@ -160,7 +228,7 @@ export function weeklyAchievementFor(items: ResumeItem[], user: ProfileUser | nu
   const role = roleLabel(user) ?? 'your target role';
   return {
     title: 'No logged wins yet this week',
-    detail: `Mark a course complete or an event attended to fill this in. Suggested focus: one concrete step toward ${role}.`,
+    detail: `Mark a course, internship, or event complete to fill this in. Suggested focus: one concrete step toward ${role}.`,
     source: 'derived',
   };
 }
@@ -215,15 +283,36 @@ export function resumeHtml(input: {
   phone?: string;
   place?: string;
   year?: string;
+  school?: string;
+  gpa?: string;
+  skills?: string;
   standing: ResumeStanding;
-  goals: { title: string; detail: string };
+  graduation: { title: string; detail: string };
+  yearly: { yearLabel: string; title: string; detail: string }[];
   weekly: GoalBlock;
-  semester: GoalBlock;
   weekLabel: string;
+  internships: ResumeItem[];
   courses: ResumeItem[];
   events: ResumeItem[];
 }) {
-  const contact = [input.place, input.year, input.email, input.phone].filter(Boolean).join(' · ');
+  const contact = [
+    input.place,
+    input.year,
+    input.school,
+    input.gpa,
+    input.email,
+    input.phone,
+  ].filter(Boolean).join(' · ');
+  const yearlyLines =
+    input.yearly.length === 0
+      ? `<p class="muted">No yearly goals yet.</p>`
+      : `<ul>${input.yearly
+          .map(
+            (goal) =>
+              `<li><strong>${escapeHtml(goal.yearLabel)} — ${escapeHtml(goal.title)}</strong> — ${escapeHtml(goal.detail)}</li>`,
+          )
+          .join('')}</ul>`;
+  const internshipLines = listHtml(input.internships, 'No internships marked complete yet.');
   const courseLines = listHtml(input.courses, 'No courses marked complete yet.');
   const eventLines = listHtml(input.events, 'No events marked attended yet.');
 
@@ -247,12 +336,15 @@ export function resumeHtml(input: {
     <p class="muted">${escapeHtml(contact || 'Student profile')}</p>
     <p class="muted">Use Print → Save as PDF to download a copy.</p>
     <p>${escapeHtml(input.standing.label)} — ${escapeHtml(input.standing.detail)}</p>
-    <h2>Broad goals</h2>
-    <p><strong>${escapeHtml(input.goals.title)}</strong><br />${escapeHtml(input.goals.detail)}</p>
+    ${input.skills ? `<h2>Skills</h2><p>${escapeHtml(input.skills)}</p>` : ''}
+    <h2>Graduation goal</h2>
+    <p><strong>${escapeHtml(input.graduation.title)}</strong><br />${escapeHtml(input.graduation.detail)}</p>
+    <h2>Yearly goals</h2>
+    ${yearlyLines}
     <h2>This week (${escapeHtml(input.weekLabel)})</h2>
     <p><strong>${escapeHtml(input.weekly.title)}</strong><br />${escapeHtml(input.weekly.detail)}</p>
-    <h2>Semester goal</h2>
-    <p><strong>${escapeHtml(input.semester.title)}</strong><br />${escapeHtml(input.semester.detail)}</p>
+    <h2>Internships completed</h2>
+    ${internshipLines}
     <h2>Courses completed</h2>
     ${courseLines}
     <h2>Events attended</h2>

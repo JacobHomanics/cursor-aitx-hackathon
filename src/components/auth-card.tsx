@@ -6,6 +6,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { AppTextField } from '@/components/ui/app-text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { profileSummaryBits } from '@/constants/onboarding';
 import { Spacing } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useLoginWithEmail } from '@/hooks/use-login-with-email';
@@ -41,7 +42,8 @@ function SetupCard() {
 }
 
 function ConfiguredAuthCard() {
-  const { ready, isAuthenticated, logout } = useAppAuth();
+  const { ready, isAuthenticated, displayName, logout } = useAppAuth();
+  const convexUser = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
 
   if (!ready) {
     return (
@@ -58,12 +60,29 @@ function ConfiguredAuthCard() {
   }
 
   return (
-    <ThemedView type="backgroundElement" style={styles.sessionRow}>
-      <ThemedText type="small" themeColor="textSecondary">
-        Signed in
-      </ThemedText>
+    <ThemedView type="backgroundElement" style={styles.card}>
+      <ThemedText type="smallBold">{displayName ?? 'Signed in'}</ThemedText>
+      {convexUser ? <OnboardingSummary user={convexUser} /> : null}
       <AppButton label="Sign out" variant="secondary" onPress={() => void logout()} />
     </ThemedView>
+  );
+}
+
+function OnboardingSummary({
+  user,
+}: {
+  user: Parameters<typeof profileSummaryBits>[0];
+}) {
+  const summary = profileSummaryBits(user);
+
+  if (summary.length === 0) {
+    return null;
+  }
+
+  return (
+    <ThemedText type="small" themeColor="textSecondary">
+      {summary.join(' · ')}
+    </ThemedText>
   );
 }
 
@@ -100,28 +119,32 @@ function LoginForm() {
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <View style={styles.methodRow}>
-        <MethodTab
-          label="Email"
-          selected={method === 'email'}
-          onPress={() => {
-            setMethod('email');
-            setCode('');
-            setCodeSent(false);
-            setError(null);
-          }}
-        />
-        <MethodTab
-          label="Phone"
-          selected={method === 'phone'}
-          onPress={() => {
-            setMethod('phone');
-            setCode('');
-            setCodeSent(false);
-            setError(null);
-          }}
-        />
-      </View>
+      <ThemedView type="backgroundSelected" style={styles.methodRow}>
+        <View style={styles.methodTabWrap}>
+          <MethodTab
+            label="Email"
+            selected={method === 'email'}
+            onPress={() => {
+              setMethod('email');
+              setCode('');
+              setCodeSent(false);
+              setError(null);
+            }}
+          />
+        </View>
+        <View style={styles.methodTabWrap}>
+          <MethodTab
+            label="Phone"
+            selected={method === 'phone'}
+            onPress={() => {
+              setMethod('phone');
+              setCode('');
+              setCodeSent(false);
+              setError(null);
+            }}
+          />
+        </View>
+      </ThemedView>
 
       {codeSent ? (
         <AppTextField
@@ -210,9 +233,9 @@ function MethodTab({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.methodPress, pressed && styles.pressed]}>
       <ThemedView
-        type={selected ? 'backgroundSelected' : 'backgroundElement'}
+        type={selected ? 'background' : 'backgroundSelected'}
         style={styles.methodTab}>
         <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
           {label}
@@ -237,24 +260,22 @@ const styles = StyleSheet.create({
   socialBtn: {
     flex: 1,
   },
-  sessionRow: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.four,
-  },
   methodRow: {
     flexDirection: 'row',
-    gap: Spacing.two,
+    gap: Spacing.one,
+    padding: Spacing.one,
+    borderRadius: Spacing.three,
+  },
+  methodTabWrap: {
+    flex: 1,
+  },
+  methodPress: {
+    flex: 1,
   },
   methodTab: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   or: {
     textAlign: 'center',
