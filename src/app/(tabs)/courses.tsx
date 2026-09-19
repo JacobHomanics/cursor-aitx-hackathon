@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CompletionButton } from '@/components/completion-button';
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,6 +20,7 @@ import {
 } from '@/constants/onboarding';
 import { BottomTabInset, MaxContentWidth, Spacing, WebTabBarHeight } from '@/constants/theme';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useCompletedItems } from '@/hooks/use-completed-items';
 import { useTheme } from '@/hooks/use-theme';
 import { api } from '@convex/_generated/api';
 
@@ -30,6 +32,7 @@ export default function CoursesScreen() {
   const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
   const latest = useQuery(api.courses.latest, isAuthenticated ? {} : 'skip');
   const analyzeCourses = useAction(api.courses.analyzeCourses);
+  const { completedIds, setItemCompleted } = useCompletedItems('course');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,7 +147,14 @@ export default function CoursesScreen() {
                       No YouTube courses were returned for this profile.
                     </ThemedText>
                   ) : (
-                    latest.courses.map((course) => <CourseCard key={course.id} course={course} />)
+                    latest.courses.map((course) => (
+                      <CourseCard
+                        key={course.id}
+                        course={course}
+                        completed={completedIds.has(course.id)}
+                        onCompletedChange={(completed) => setItemCompleted(course.id, completed)}
+                      />
+                    ))
                   )}
                 </>
               ) : null}
@@ -158,6 +168,8 @@ export default function CoursesScreen() {
 
 function CourseCard({
   course,
+  completed,
+  onCompletedChange,
 }: {
   course: {
     id: string;
@@ -171,13 +183,15 @@ function CourseCard({
     fit?: 'high' | 'medium' | 'low';
     coverUrl?: string;
   };
+  completed: boolean;
+  onCompletedChange: (completed: boolean) => Promise<unknown>;
 }) {
   const meta = [course.kind === 'playlist' ? 'Playlist' : course.kind === 'video' ? 'Video' : null, course.channel, course.videoCount ?? course.duration]
     .filter(Boolean)
     .join(' · ');
 
   return (
-    <ThemedView type="backgroundElement" style={styles.eventCard}>
+    <ThemedView type="backgroundElement" style={[styles.eventCard, completed && styles.doneCard]}>
       {course.coverUrl ? (
         <Image source={{ uri: course.coverUrl }} style={styles.cover} contentFit="cover" />
       ) : null}
@@ -203,6 +217,12 @@ function CourseCard({
         <ExternalLink href={course.url as `${string}:${string}`}>
           <ThemedText type="linkPrimary">Open on YouTube</ThemedText>
         </ExternalLink>
+        <CompletionButton
+          done={completed}
+          todoLabel="I completed this course"
+          doneLabel="Completed"
+          onChange={onCompletedChange}
+        />
       </View>
     </ThemedView>
   );
@@ -249,6 +269,9 @@ const styles = StyleSheet.create({
   eventCard: {
     borderRadius: Spacing.four,
     overflow: 'hidden',
+  },
+  doneCard: {
+    opacity: 0.75,
   },
   cover: {
     width: '100%',

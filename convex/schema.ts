@@ -55,6 +55,22 @@ export default defineSchema({
     response: v.optional(v.string()),
   }).index('by_token', ['tokenIdentifier']),
 
+  /**
+   * Events the student attended and courses they completed. Name, url and detail are copied from
+   * the analysis at the time so the log survives the analysis being replaced on refresh.
+   */
+  activityLog: defineTable({
+    tokenIdentifier: v.string(),
+    kind: v.union(v.literal('event'), v.literal('course')),
+    itemId: v.string(),
+    name: v.string(),
+    url: v.string(),
+    detail: v.optional(v.string()),
+    completedAt: v.number(),
+  })
+    .index('by_token_and_kind', ['tokenIdentifier', 'kind'])
+    .index('by_token_and_kind_and_item', ['tokenIdentifier', 'kind', 'itemId']),
+
   courseAnalyses: defineTable({
     tokenIdentifier: v.string(),
     summary: v.string(),
