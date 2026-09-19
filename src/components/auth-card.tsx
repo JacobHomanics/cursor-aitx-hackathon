@@ -6,7 +6,6 @@ import { AppButton } from '@/components/ui/app-button';
 import { AppTextField } from '@/components/ui/app-text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { collegeYearLabel, INDUSTRY_INTERESTS, interestLabel, locationLabel, PREFERRED_COMPANIES, ROLE_INTERESTS, type CollegeYear } from '@/constants/onboarding';
 import { Spacing } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useLoginWithEmail } from '@/hooks/use-login-with-email';
@@ -42,9 +41,7 @@ function SetupCard() {
 }
 
 function ConfiguredAuthCard() {
-  const { ready, isAuthenticated, displayName, userId, logout } = useAppAuth();
-  const convexUser = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
-  const convexStatus = useQuery(api.status.ping, isConvexConfigured ? {} : 'skip');
+  const { ready, isAuthenticated, logout } = useAppAuth();
 
   if (!ready) {
     return (
@@ -61,61 +58,12 @@ function ConfiguredAuthCard() {
   }
 
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">Signed in with Privy</ThemedText>
+    <ThemedView type="backgroundElement" style={styles.sessionRow}>
       <ThemedText type="small" themeColor="textSecondary">
-        {displayName ?? userId}
-      </ThemedText>
-      {convexUser ? (
-        <OnboardingSummary
-          collegeYear={convexUser.collegeYear}
-          city={convexUser.city}
-          state={convexUser.state}
-          industryInterest={convexUser.industryInterest}
-          roleInterest={convexUser.roleInterest}
-          preferredCompany={convexUser.preferredCompany}
-        />
-      ) : null}
-      <ThemedText type="code" themeColor="textSecondary">
-        Convex {convexStatus?.ok ? 'connected' : 'waiting'}
-        {convexUser ? ` · ${convexUser.privyDid}` : ''}
+        Signed in
       </ThemedText>
       <AppButton label="Sign out" variant="secondary" onPress={() => void logout()} />
     </ThemedView>
-  );
-}
-
-function OnboardingSummary({
-  collegeYear,
-  city,
-  state,
-  industryInterest,
-  roleInterest,
-  preferredCompany,
-}: {
-  collegeYear?: CollegeYear;
-  city?: string;
-  state?: string;
-  industryInterest?: string;
-  roleInterest?: string;
-  preferredCompany?: string;
-}) {
-  const summary = [
-    collegeYearLabel(collegeYear),
-    locationLabel(city, state),
-    interestLabel(INDUSTRY_INTERESTS, industryInterest),
-    interestLabel(ROLE_INTERESTS, roleInterest),
-    interestLabel(PREFERRED_COMPANIES, preferredCompany),
-  ].filter(Boolean);
-
-  if (summary.length === 0) {
-    return null;
-  }
-
-  return (
-    <ThemedText type="small" themeColor="textSecondary">
-      {summary.join(' · ')}
-    </ThemedText>
   );
 }
 
@@ -152,11 +100,6 @@ function LoginForm() {
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">Sign in</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Email, phone, Google, or Twitter. Convex stores the user after login.
-      </ThemedText>
-
       <View style={styles.methodRow}>
         <MethodTab
           label="Email"
@@ -180,14 +123,6 @@ function LoginForm() {
         />
       </View>
 
-      <AppTextField
-        autoCapitalize="none"
-        autoComplete={method === 'email' ? 'email' : 'tel'}
-        keyboardType={method === 'email' ? 'email-address' : 'phone-pad'}
-        onChangeText={method === 'email' ? setEmail : setPhone}
-        placeholder={method === 'email' ? 'you@example.com' : '+1 555 555 0100'}
-        value={identifier}
-      />
       {codeSent ? (
         <AppTextField
           autoComplete="one-time-code"
@@ -202,47 +137,65 @@ function LoginForm() {
           {error}
         </ThemedText>
       ) : null}
-      <AppButton
-        disabled={busy || identifier.length === 0 || (codeSent && code.length === 0)}
-        label={codeSent ? (busy ? 'Signing in…' : 'Verify code') : busy ? 'Sending…' : 'Send code'}
-        onPress={() => {
-          run(async () => {
-            if (!codeSent) {
-              if (method === 'email') {
-                await emailLogin.sendCode({ email });
-              } else {
-                await phoneLogin.sendCode(phone);
+      <View style={styles.socialRow}>
+        <View style={styles.socialBtn}>
+          <AppTextField
+            autoCapitalize="none"
+            autoComplete={method === 'email' ? 'email' : 'tel'}
+            keyboardType={method === 'email' ? 'email-address' : 'phone-pad'}
+            onChangeText={method === 'email' ? setEmail : setPhone}
+            placeholder={method === 'email' ? 'you@example.com' : '+1 555 555 0100'}
+            value={identifier}
+          />
+        </View>
+        <AppButton
+          disabled={busy || identifier.length === 0 || (codeSent && code.length === 0)}
+          label={codeSent ? (busy ? 'Signing in…' : 'Verify') : busy ? 'Sending…' : 'Send code'}
+          onPress={() => {
+            run(async () => {
+              if (!codeSent) {
+                if (method === 'email') {
+                  await emailLogin.sendCode({ email });
+                } else {
+                  await phoneLogin.sendCode(phone);
+                }
+                setCodeSent(true);
+                return;
               }
-              setCodeSent(true);
-              return;
-            }
 
-            if (method === 'email') {
-              await emailLogin.loginWithCode({ code, email } as { code: string; email: string });
-              return;
-            }
+              if (method === 'email') {
+                await emailLogin.loginWithCode({ code, email } as { code: string; email: string });
+                return;
+              }
 
-            await phoneLogin.loginWithCode(code, phone);
-          });
-        }}
-      />
+              await phoneLogin.loginWithCode(code, phone);
+            });
+          }}
+        />
+      </View>
 
       <ThemedText type="small" themeColor="textSecondary" style={styles.or}>
         or
       </ThemedText>
 
-      <AppButton
-        disabled={busy || socialLogin.busy}
-        label="Continue with Google"
-        variant="secondary"
-        onPress={() => loginWithSocial('google')}
-      />
-      <AppButton
-        disabled={busy || socialLogin.busy}
-        label="Continue with Twitter"
-        variant="secondary"
-        onPress={() => loginWithSocial('twitter')}
-      />
+      <View style={styles.socialRow}>
+        <View style={styles.socialBtn}>
+          <AppButton
+            disabled={busy || socialLogin.busy}
+            label="Google"
+            variant="secondary"
+            onPress={() => loginWithSocial('google')}
+          />
+        </View>
+        <View style={styles.socialBtn}>
+          <AppButton
+            disabled={busy || socialLogin.busy}
+            label="Twitter"
+            variant="secondary"
+            onPress={() => loginWithSocial('twitter')}
+          />
+        </View>
+      </View>
     </ThemedView>
   );
 }
@@ -272,9 +225,26 @@ function MethodTab({
 const styles = StyleSheet.create({
   card: {
     alignSelf: 'stretch',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.four,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  socialBtn: {
+    flex: 1,
+  },
+  sessionRow: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
+    paddingVertical: Spacing.three,
     borderRadius: Spacing.four,
   },
   methodRow: {

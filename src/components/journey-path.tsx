@@ -1,5 +1,6 @@
-import type { Ref } from 'react';
-import { StyleSheet, View } from 'react-native';
+import type { ReactNode, Ref } from 'react';
+import { Link } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import type { JourneyGoal, JourneyMilestone } from '@/constants/journey';
@@ -55,13 +56,14 @@ export function JourneyPath({ goal, milestones, currentAnchorRef, onCurrentLayou
 
       {stops.map(({ milestone, step }, index) => {
         const isLast = index === stops.length - 1;
+        const isCurrent = milestone.status === 'current';
 
         return (
           <View
             key={milestone.id}
-            ref={milestone.status === 'current' ? currentAnchorRef : undefined}
+            ref={isCurrent ? currentAnchorRef : undefined}
             collapsable={false}
-            onLayout={milestone.status === 'current' ? onCurrentLayout : undefined}
+            onLayout={isCurrent ? onCurrentLayout : undefined}
             style={[styles.row, isLast && styles.lastRow]}>
             {!isLast && (
               <Connector
@@ -188,6 +190,26 @@ const STATUS_LABEL = {
   upcoming: 'Upcoming',
 } as const;
 
+function PlannerLink({
+  accessibilityLabel,
+  children,
+}: {
+  accessibilityLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link href="/weekly-planner" asChild>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint="Opens the weekly planner"
+        style={({ pressed }) => [StyleSheet.absoluteFill, pressed && styles.pressed]}>
+        {children}
+      </Pressable>
+    </Link>
+  );
+}
+
 function MilestoneStop({
   x,
   step,
@@ -201,69 +223,89 @@ function MilestoneStop({
   const theme = useTheme();
   const { status } = milestone;
   const labelOnLeft = x > CENTER_X;
+  const isCurrent = status === 'current';
+  const accessibilityLabel = isCurrent
+    ? `${milestone.title}, You are here, ${milestone.timeframe}. Open weekly planner`
+    : `${milestone.title}, ${STATUS_LABEL[status]}, ${milestone.timeframe}`;
+
+  const node = (
+    <View style={[styles.node, { left: `${x}%` }]}>
+      {isCurrent && (
+        <>
+          <Halo size={80} nodeSize={NODE} color={colors.accentGlow} />
+          <Halo size={62} nodeSize={NODE} color={colors.accentSoft} />
+        </>
+      )}
+      {status === 'upcoming' ? (
+        <View
+          style={[
+            styles.core,
+            { backgroundColor: theme.background, borderColor: colors.track, borderWidth: 2 },
+          ]}>
+          <ThemedText type="smallBold" themeColor="textSecondary">
+            {step}
+          </ThemedText>
+        </View>
+      ) : (
+        <View style={[styles.core, { backgroundColor: colors.accent }]}>
+          {status === 'done' ? (
+            <ThemedText style={[styles.checkGlyph, { color: colors.onAccent }]}>✓</ThemedText>
+          ) : (
+            <View style={[styles.currentDot, { backgroundColor: colors.onAccent }]} />
+          )}
+        </View>
+      )}
+    </View>
+  );
+
+  const label = (
+    <View
+      accessible={!isCurrent}
+      accessibilityLabel={isCurrent ? undefined : accessibilityLabel}
+      style={[
+        styles.label,
+        labelOnLeft
+          ? {
+              right: `${100 - x}%`,
+              marginRight: NODE / 2 + Spacing.three,
+              alignItems: 'flex-end',
+            }
+          : { left: `${x}%`, marginLeft: NODE / 2 + Spacing.three, alignItems: 'flex-start' },
+      ]}>
+      {isCurrent && (
+        <View style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
+          <ThemedText type="code" style={[styles.chipText, { color: colors.accent }]}>
+            You are here
+          </ThemedText>
+        </View>
+      )}
+      <ThemedText
+        type="smallBold"
+        themeColor={status === 'upcoming' ? 'textSecondary' : 'text'}
+        numberOfLines={3}
+        style={labelOnLeft && styles.textRight}>
+        {milestone.title}
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" style={labelOnLeft && styles.textRight}>
+        {milestone.timeframe}
+      </ThemedText>
+    </View>
+  );
+
+  if (!isCurrent) {
+    return (
+      <>
+        {node}
+        {label}
+      </>
+    );
+  }
 
   return (
-    <>
-      <View style={[styles.node, { left: `${x}%` }]}>
-        {status === 'current' && (
-          <>
-            <Halo size={80} nodeSize={NODE} color={colors.accentGlow} />
-            <Halo size={62} nodeSize={NODE} color={colors.accentSoft} />
-          </>
-        )}
-        {status === 'upcoming' ? (
-          <View
-            style={[
-              styles.core,
-              { backgroundColor: theme.background, borderColor: colors.track, borderWidth: 2 },
-            ]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              {step}
-            </ThemedText>
-          </View>
-        ) : (
-          <View style={[styles.core, { backgroundColor: colors.accent }]}>
-            {status === 'done' ? (
-              <ThemedText style={[styles.checkGlyph, { color: colors.onAccent }]}>✓</ThemedText>
-            ) : (
-              <View style={[styles.currentDot, { backgroundColor: colors.onAccent }]} />
-            )}
-          </View>
-        )}
-      </View>
-
-      <View
-        accessible
-        accessibilityLabel={`${milestone.title}, ${STATUS_LABEL[status]}, ${milestone.timeframe}`}
-        style={[
-          styles.label,
-          labelOnLeft
-            ? {
-                right: `${100 - x}%`,
-                marginRight: NODE / 2 + Spacing.three,
-                alignItems: 'flex-end',
-              }
-            : { left: `${x}%`, marginLeft: NODE / 2 + Spacing.three, alignItems: 'flex-start' },
-        ]}>
-        {status === 'current' && (
-          <View style={[styles.chip, { backgroundColor: colors.accentSoft }]}>
-            <ThemedText type="code" style={[styles.chipText, { color: colors.accent }]}>
-              You are here
-            </ThemedText>
-          </View>
-        )}
-        <ThemedText
-          type="smallBold"
-          themeColor={status === 'upcoming' ? 'textSecondary' : 'text'}
-          numberOfLines={3}
-          style={labelOnLeft && styles.textRight}>
-          {milestone.title}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" style={labelOnLeft && styles.textRight}>
-          {milestone.timeframe}
-        </ThemedText>
-      </View>
-    </>
+    <PlannerLink accessibilityLabel={accessibilityLabel}>
+      {node}
+      {label}
+    </PlannerLink>
   );
 }
 
@@ -352,6 +394,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     fontSize: 10,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   textRight: {
     textAlign: 'right',

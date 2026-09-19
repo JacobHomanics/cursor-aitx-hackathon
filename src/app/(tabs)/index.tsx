@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { JourneyPath } from '@/components/journey-path';
+import { PlannerPreview } from '@/components/planner-preview';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { buildJourney } from '@/constants/journey';
@@ -158,6 +159,8 @@ export default function HomeScreen() {
             currentAnchorRef={currentAnchorRef}
             onCurrentLayout={scrollToCurrent}
           />
+
+          <PlannerPreview />
         </SafeAreaView>
       </ScrollView>
     </ThemedView>

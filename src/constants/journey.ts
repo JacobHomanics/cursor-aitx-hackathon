@@ -57,6 +57,13 @@ const COLLEGE_YEAR_STOPS = [
   { id: 'fourth_year', label: '4th year' },
 ] as const;
 
+const GENERIC_YEAR_TITLES: [string, string, string, string] = [
+  'Explore Intern',
+  'Summer Intern',
+  'Software Engineering Intern',
+  'New Grad Intern',
+];
+
 const ROLE_YEAR_TITLES: Record<string, [string, string, string, string]> = {
   software_engineer: [
     'Explore Engineering Intern',
@@ -161,15 +168,12 @@ export function internshipTitleForYear(
     return generated;
   }
 
-  const preset = roleInterest ? ROLE_YEAR_TITLES[roleInterest] : undefined;
+  const preset = roleInterest ? ROLE_YEAR_TITLES[roleInterest] : GENERIC_YEAR_TITLES;
   if (preset?.[yearIndex]) {
     return preset[yearIndex];
   }
 
   const role = interestLabel(ROLE_INTERESTS, roleInterest);
-  if (yearIndex === 0) {
-    return role ? `Explore ${role} Intern` : 'Explore Intern';
-  }
   return role ? `${role} Intern` : 'Summer Intern';
 }
 

@@ -1,5 +1,5 @@
 import { useConvexAuth, useQuery } from 'convex/react';
-import { createElement, useRef, useState, type ReactNode } from 'react';
+import { createElement, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -40,7 +40,7 @@ import { api } from '@convex/_generated/api';
 
 export default function ProfileScreen() {
   const colors = useJourneyColors();
-  const { isMobileWeb } = useBreakpoint();
+  const { isMobileWeb, width } = useBreakpoint();
   const { isAuthenticated } = useConvexAuth();
   const auth = useAppAuth();
   const user = useQuery(api.users.current, isAuthenticated ? {} : 'skip');
@@ -56,19 +56,26 @@ export default function ProfileScreen() {
   const standing = standingFor(courses.length, events.length);
   const email = user?.email ?? auth.email;
   const phone = user?.phone ?? auth.phone;
+  const year = yearLabel(user);
+  const place = placeLabel(user);
+  const role = roleLabel(user);
+  const industry = industryLabel(user);
+  const company = companyLabel(user);
   const goals = broadGoalsFor(user);
   const weekly = weeklyAchievementFor(record, user);
   const semester = semesterGoalFor(user);
   const weekLabel = weekWindowLabel();
   const weekItems = thisWeekItems(record);
+  const signedIn = auth.isAuthenticated || isAuthenticated;
+  const meta = [year, place, email, phone].filter(Boolean).join(' · ');
 
   const openPdf = () => {
     const html = resumeHtml({
       name,
       email,
       phone,
-      place: placeLabel(user),
-      year: yearLabel(user),
+      place,
+      year,
       standing,
       goals,
       weekly,
@@ -100,105 +107,89 @@ export default function ProfileScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          isMobileWeb && { paddingBottom: WebTabBarHeight + Spacing.five },
+          isMobileWeb && { paddingBottom: WebTabBarHeight + Spacing.two },
         ]}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
-            <ThemedText type="code" themeColor="textSecondary" style={styles.eyebrow}>
-              Profile
-            </ThemedText>
-            <ThemedText type="subtitle" style={{ fontFamily: Fonts.serif }}>
-              Your path
-            </ThemedText>
-          </View>
-
-          <AuthCard />
-
-          {!isAuthenticated || !user ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">Sign in to fill this with your account</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Until then, the sections below use placeholders so you can see the layout.
+        <SafeAreaView style={[styles.safeArea, !isMobileWeb && { paddingBottom: BottomTabInset + Spacing.two }]}>
+          <ThemedView type="backgroundElement" style={styles.hero}>
+            <View style={[styles.avatar, { backgroundColor: colors.accentSoft }]}>
+              <ThemedText type="smallBold" style={{ color: colors.accent, fontFamily: Fonts.serif }}>
+                {initialsFor(name)}
               </ThemedText>
-            </ThemedView>
-          ) : null}
-
-          <Section label="Basics">
-            <ThemedView type="backgroundElement" style={styles.identityCard}>
-              <View style={[styles.avatar, { backgroundColor: colors.accentSoft }]}>
-                <ThemedText type="smallBold" style={{ color: colors.accent }}>
-                  {initialsFor(name)}
-                </ThemedText>
-              </View>
-              <View style={styles.identityCopy}>
-                <ThemedText type="default" style={styles.name}>
+            </View>
+            <View style={styles.heroCopy}>
+              <View style={styles.nameRow}>
+                <ThemedText type="default" style={styles.name} numberOfLines={1}>
                   {name}
                 </ThemedText>
-                <FactRow label="School year" value={yearLabel(user)} />
-                <FactRow label="Location" value={placeLabel(user)} />
-                <FactRow label="Email" value={email} />
-                {phone ? <FactRow label="Phone" value={phone} /> : null}
-                <FactRow label="Standing" value={standing.label} />
-              </View>
-            </ThemedView>
-          </Section>
-
-          <Section label="Broad goals">
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">{goals.title}</ThemedText>
-              <ThemedText type="small">{goals.detail}</ThemedText>
-              <FactRow label="Role" value={roleLabel(user)} />
-              <FactRow label="Industry" value={industryLabel(user)} />
-              <FactRow label="Company" value={companyLabel(user)} />
-            </ThemedView>
-          </Section>
-
-          <Section label={`This week · ${weekLabel}`}>
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">{weekly.title}</ThemedText>
-              <ThemedText type="small">{weekly.detail}</ThemedText>
-              {weekly.source === 'derived' ? (
-                <ThemedText type="code" themeColor="textSecondary">
-                  Placeholder until you log a course or event
-                </ThemedText>
-              ) : (
-                weekItems.map((item) => (
-                  <ThemedText key={`${item.kind}-${item.itemId}`} type="small" themeColor="textSecondary">
-                    {item.kind === 'course' ? 'Course' : 'Event'} · {item.name} ·{' '}
-                    {formatLoggedDate(item.completedAt)}
+                <View style={[styles.standing, { backgroundColor: colors.goldSoft }]}>
+                  <ThemedText type="code" style={{ color: colors.gold }}>
+                    {standing.label}
                   </ThemedText>
-                ))
-              )}
-            </ThemedView>
-          </Section>
-
-          <Section label="Semester goal">
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">{semester.title}</ThemedText>
-              <ThemedText type="small">{semester.detail}</ThemedText>
-              <ThemedText type="code" themeColor="textSecondary">
-                Derived from your onboarding target — we can replace this with a saved goal later
+                </View>
+              </View>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                {meta || 'Add year, location, and contact in onboarding'}
               </ThemedText>
-            </ThemedView>
-          </Section>
-
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">Resume PDF</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Opens a printable resume with your basics, goals, this week, semester target, courses, and
-              events.
-            </ThemedText>
-            <AppButton
-              disabled={pdfBusy}
-              label={pdfBusy ? 'Opening…' : 'View resume PDF'}
-              onPress={openPdf}
-            />
-            {pdfError ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                {pdfError}
-              </ThemedText>
-            ) : null}
+              <View style={styles.chipRow}>
+                <Chip label="Role" value={role} tint={colors.accentSoft} />
+                <Chip label="Industry" value={industry} tint={colors.accentSoft} />
+                <Chip label="Company" value={company} tint={colors.goldSoft} />
+              </View>
+            </View>
           </ThemedView>
+
+          {!signedIn ? <AuthCard /> : null}
+
+          {signedIn ? (
+            <>
+              <View style={[styles.split, width < 560 && styles.splitStack]}>
+                <ThemedView type="backgroundElement" style={styles.panel}>
+                  <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
+                    This week · {weekLabel}
+                  </ThemedText>
+                  <ThemedText type="smallBold" numberOfLines={1}>
+                    {weekly.title}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+                    {weekly.source === 'logged' && weekItems.length > 0
+                      ? weekItems
+                          .map((item) => `${item.name} · ${formatLoggedDate(item.completedAt)}`)
+                          .join(' · ')
+                      : weekly.detail}
+                  </ThemedText>
+                </ThemedView>
+                <ThemedView type="backgroundElement" style={styles.panel}>
+                  <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
+                    Semester
+                  </ThemedText>
+                  <ThemedText type="smallBold" numberOfLines={1}>
+                    {semester.title}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+                    {semester.detail}
+                  </ThemedText>
+                </ThemedView>
+              </View>
+
+              <View style={styles.actions}>
+                <View style={styles.actionGrow}>
+                  <AppButton
+                    disabled={pdfBusy}
+                    label={pdfBusy ? 'Opening…' : 'View resume PDF'}
+                    onPress={openPdf}
+                  />
+                </View>
+                <View style={styles.actionGrow}>
+                  <AppButton label="Sign out" variant="secondary" onPress={() => void auth.logout()} />
+                </View>
+              </View>
+              {pdfError ? (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {pdfError}
+                </ThemedText>
+              ) : null}
+            </>
+          ) : null}
         </SafeAreaView>
       </ScrollView>
       {previewHtml ? <ResumePreview html={previewHtml} onClose={() => setPreviewHtml(null)} /> : null}
@@ -236,25 +227,11 @@ function ResumePreview({ html, onClose }: { html: string; onClose: () => void })
   );
 }
 
-function Section({ label, children }: { label: string; children: ReactNode }) {
+function Chip({ label, value, tint }: { label: string; value?: string; tint: string }) {
   return (
-    <View style={styles.section}>
-      <ThemedText type="code" themeColor="textSecondary" style={styles.sectionLabel}>
-        {label}
-      </ThemedText>
-      {children}
-    </View>
-  );
-}
-
-function FactRow({ label, value }: { label: string; value?: string }) {
-  return (
-    <View style={styles.factRow}>
-      <ThemedText type="small" themeColor="textSecondary">
-        {label}
-      </ThemedText>
-      <ThemedText type="smallBold" style={styles.factValue}>
-        {value ?? '—'}
+    <View style={[styles.chip, { backgroundColor: tint }]}>
+      <ThemedText type="code" themeColor="textSecondary">
+        {label} · {value?.trim() || '—'}
       </ThemedText>
     </View>
   );
@@ -266,14 +243,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   scrollContent: {
-    flexGrow: 1,
+    flexGrow: 0,
   },
   safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.four,
+    paddingHorizontal: Spacing.three,
+    gap: Spacing.two,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
     maxWidth: MaxContentWidth,
     width: '100%',
     alignSelf: 'center',
@@ -294,17 +270,7 @@ const styles = StyleSheet.create({
     width: 320,
     height: 320,
   },
-  header: {
-    gap: Spacing.one,
-  },
-  eyebrow: {
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
-  section: {
-    gap: Spacing.two,
-  },
-  identityCard: {
+  hero: {
     flexDirection: 'row',
     gap: Spacing.three,
     padding: Spacing.three,
@@ -318,33 +284,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  identityCopy: {
+  heroCopy: {
     flex: 1,
     gap: Spacing.one,
+    minWidth: 0,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    flexWrap: 'wrap',
   },
   name: {
     fontFamily: Fonts.serif,
     fontSize: 22,
-    lineHeight: 28,
-    marginBottom: Spacing.one,
+    lineHeight: 26,
+    flexShrink: 1,
   },
-  card: {
+  standing: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.one,
+    marginTop: Spacing.one,
+  },
+  chip: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  split: {
+    flexDirection: 'row',
     gap: Spacing.two,
+  },
+  splitStack: {
+    flexDirection: 'column',
+  },
+  panel: {
+    flex: 1,
+    gap: Spacing.one,
     padding: Spacing.three,
     borderRadius: Spacing.four,
+    minWidth: 0,
   },
   sectionLabel: {
     textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
-  factRow: {
+  actions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
-  factValue: {
-    flexShrink: 1,
-    textAlign: 'right',
+  actionGrow: {
+    flex: 1,
   },
   previewShell: {
     ...StyleSheet.absoluteFill,
