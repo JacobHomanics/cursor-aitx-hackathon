@@ -6,7 +6,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { AppTextField } from '@/components/ui/app-text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { collegeYearLabel, INDUSTRY_INTERESTS, interestLabel, PREFERRED_COMPANIES, ROLE_INTERESTS, type CollegeYear } from '@/constants/onboarding';
+import { collegeYearLabel, INDUSTRY_INTERESTS, interestLabel, locationLabel, PREFERRED_COMPANIES, ROLE_INTERESTS, type CollegeYear } from '@/constants/onboarding';
 import { Spacing } from '@/constants/theme';
 import { useAppAuth } from '@/hooks/use-app-auth';
 import { useLoginWithEmail } from '@/hooks/use-login-with-email';
@@ -69,6 +69,8 @@ function ConfiguredAuthCard() {
       {convexUser ? (
         <OnboardingSummary
           collegeYear={convexUser.collegeYear}
+          city={convexUser.city}
+          state={convexUser.state}
           industryInterest={convexUser.industryInterest}
           roleInterest={convexUser.roleInterest}
           preferredCompany={convexUser.preferredCompany}
@@ -85,17 +87,22 @@ function ConfiguredAuthCard() {
 
 function OnboardingSummary({
   collegeYear,
+  city,
+  state,
   industryInterest,
   roleInterest,
   preferredCompany,
 }: {
   collegeYear?: CollegeYear;
+  city?: string;
+  state?: string;
   industryInterest?: string;
   roleInterest?: string;
   preferredCompany?: string;
 }) {
   const summary = [
     collegeYearLabel(collegeYear),
+    locationLabel(city, state),
     interestLabel(INDUSTRY_INTERESTS, industryInterest),
     interestLabel(ROLE_INTERESTS, roleInterest),
     interestLabel(PREFERRED_COMPANIES, preferredCompany),

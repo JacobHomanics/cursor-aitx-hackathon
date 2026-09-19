@@ -20,9 +20,18 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="analyzer">
+        <NativeTabs.Trigger.Label>Analyzer</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/explore.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="courses">
+        <NativeTabs.Trigger.Label>Courses</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="play.rectangle.fill"
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />

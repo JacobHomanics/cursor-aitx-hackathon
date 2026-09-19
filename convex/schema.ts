@@ -19,6 +19,8 @@ export default defineSchema({
         v.literal('other'),
       ),
     ),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
     industryInterest: v.optional(v.string()),
     roleInterest: v.optional(v.string()),
     preferredCompany: v.optional(v.string()),
@@ -26,4 +28,52 @@ export default defineSchema({
   })
     .index('by_token', ['tokenIdentifier'])
     .index('by_privy_did', ['privyDid']),
+
+  eventAnalyses: defineTable({
+    tokenIdentifier: v.string(),
+    summary: v.string(),
+    lumaPlace: v.optional(v.string()),
+    lumaSlug: v.optional(v.string()),
+    events: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        url: v.string(),
+        startAt: v.optional(v.string()),
+        timezone: v.optional(v.string()),
+        location: v.optional(v.string()),
+        calendarName: v.optional(v.string()),
+        guestCount: v.optional(v.number()),
+        isFree: v.optional(v.boolean()),
+        coverUrl: v.optional(v.string()),
+        reason: v.optional(v.string()),
+        fit: v.optional(v.union(v.literal('high'), v.literal('medium'), v.literal('low'))),
+      }),
+    ),
+    createdAt: v.number(),
+    prompt: v.optional(v.string()),
+    response: v.optional(v.string()),
+  }).index('by_token', ['tokenIdentifier']),
+
+  courseAnalyses: defineTable({
+    tokenIdentifier: v.string(),
+    summary: v.string(),
+    courses: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        url: v.string(),
+        channel: v.optional(v.string()),
+        kind: v.optional(v.union(v.literal('playlist'), v.literal('video'))),
+        videoCount: v.optional(v.string()),
+        duration: v.optional(v.string()),
+        coverUrl: v.optional(v.string()),
+        reason: v.optional(v.string()),
+        fit: v.optional(v.union(v.literal('high'), v.literal('medium'), v.literal('low'))),
+      }),
+    ),
+    createdAt: v.number(),
+    prompt: v.optional(v.string()),
+    response: v.optional(v.string()),
+  }).index('by_token', ['tokenIdentifier']),
 });
