@@ -9,9 +9,13 @@
  */
 
 import type * as analyzer from "../analyzer.js";
+import type * as chatgpt from "../chatgpt.js";
+import type * as courses from "../courses.js";
 import type * as luma from "../luma.js";
+import type * as profile from "../profile.js";
 import type * as status from "../status.js";
 import type * as users from "../users.js";
+import type * as youtube from "../youtube.js";
 
 import type {
   ApiFromModules,
@@ -21,9 +25,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   analyzer: typeof analyzer;
+  chatgpt: typeof chatgpt;
+  courses: typeof courses;
   luma: typeof luma;
+  profile: typeof profile;
   status: typeof status;
   users: typeof users;
+  youtube: typeof youtube;
 }>;
 
 /**

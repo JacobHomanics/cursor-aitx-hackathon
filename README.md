@@ -52,3 +52,11 @@ After onboarding, the Analyzer tab sends the student profile (city, state, indus
 ```bash
 npx convex env set OPENAI_API_KEY <your-openai-key>
 ```
+
+## Course analyzer
+
+The Courses tab uses the same profile and ChatGPT flow against public YouTube courses (playlists and long videos). A YouTube Data API key is optional:
+
+```bash
+npx convex env set YOUTUBE_API_KEY <your-youtube-data-api-key>
+```

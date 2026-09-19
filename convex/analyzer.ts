@@ -1,8 +1,15 @@
-import { getServiceToken } from 'convex/server';
 import { v } from 'convex/values';
 
 import { internal } from './_generated/api';
 import { action, internalMutation, query } from './_generated/server';
+import {
+  completeChat,
+  parseChatPicks,
+  parseChatSummary,
+  prettyJson,
+  type ChatPick,
+} from './chatgpt';
+import { formatProfile, type StudentProfile } from './profile';
 import { searchLumaEvents, type LumaEvent } from './luma';
 
 const analyzedEventValidator = v.object({
@@ -19,57 +26,6 @@ const analyzedEventValidator = v.object({
   reason: v.optional(v.string()),
   fit: v.optional(v.union(v.literal('high'), v.literal('medium'), v.literal('low'))),
 });
-
-const COLLEGE_YEAR_LABELS: Record<string, string> = {
-  first_year: '1st year',
-  second_year: '2nd year',
-  third_year: '3rd year',
-  fourth_year: '4th year',
-  fifth_year_plus: '5th year or more',
-  graduate: 'Graduate / professional',
-  other: 'Other / not a student',
-};
-
-const INDUSTRY_LABELS: Record<string, string> = {
-  technology: 'Technology',
-  finance: 'Finance',
-  healthcare: 'Healthcare',
-  energy: 'Energy',
-  consulting: 'Consulting',
-  education: 'Education',
-  government: 'Government / public policy',
-  media: 'Media / entertainment',
-  consumer: 'Consumer / retail',
-  nonprofit: 'Nonprofit',
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  software_engineer: 'Software engineer',
-  product_manager: 'Product manager',
-  designer: 'Designer',
-  data_scientist: 'Data scientist',
-  researcher: 'Researcher',
-  founder: 'Founder',
-  consultant: 'Consultant',
-  operations: 'Operations',
-  marketing: 'Marketing',
-  policy: 'Policy',
-};
-
-const COMPANY_LABELS: Record<string, string> = {
-  google: 'Google',
-  apple: 'Apple',
-  microsoft: 'Microsoft',
-  amazon: 'Amazon',
-  meta: 'Meta',
-  openai: 'OpenAI',
-  nvidia: 'Nvidia',
-  tesla: 'Tesla',
-  spacex: 'SpaceX',
-  stripe: 'Stripe',
-  goldman_sachs: 'Goldman Sachs',
-  mckinsey: 'McKinsey',
-};
 
 const analysisValidator = v.object({
   summary: v.string(),
@@ -177,22 +133,6 @@ export const analyzeEvents = action({
   },
 });
 
-type StudentProfile = {
-  collegeYear?: string;
-  city?: string;
-  state?: string;
-  industryInterest?: string;
-  roleInterest?: string;
-  preferredCompany?: string;
-};
-
-type ChatPick = {
-  id: string;
-  name?: string;
-  reason: string;
-  fit: 'high' | 'medium' | 'low';
-};
-
 type ChatAnalysis = {
   summary: string;
   picks: ChatPick[];
@@ -203,24 +143,6 @@ type ChatExchange = {
   prompt: string;
   response: string;
 };
-
-function formatProfile(user: StudentProfile) {
-  return {
-    collegeYear: labelFor(COLLEGE_YEAR_LABELS, user.collegeYear) ?? 'Unknown',
-    location: [user.city, user.state].filter(Boolean).join(', ') || 'Unknown',
-    industry: labelFor(INDUSTRY_LABELS, user.industryInterest) ?? user.industryInterest ?? 'Unknown',
-    role: labelFor(ROLE_LABELS, user.roleInterest) ?? user.roleInterest ?? 'Unknown',
-    preferredCompany:
-      labelFor(COMPANY_LABELS, user.preferredCompany) ?? user.preferredCompany ?? 'Unknown',
-  };
-}
-
-function labelFor(labels: Record<string, string>, value: string | undefined) {
-  if (!value) {
-    return undefined;
-  }
-  return labels[value] ?? value;
-}
 
 async function analyzeWithChatGPT(
   profile: ReturnType<typeof formatProfile>,
@@ -291,105 +213,16 @@ function formatEventLine(event: LumaEvent, index: number) {
   return `${index + 1}. ${event.name} [id: ${event.id}] — ${when} — ${location}${calendar}`;
 }
 
-async function completeChat(messages: Array<{ role: 'system' | 'user'; content: string }>) {
-  try {
-    const token = await getServiceToken('ai-gateway');
-    return await requestChatCompletion(
-      'https://ai-gateway.convex.dev/v1/chat/completions',
-      token,
-      'openai/gpt-4o-mini',
-      messages,
-    );
-  } catch {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error(
-        'Add OPENAI_API_KEY with npx convex env set OPENAI_API_KEY, or enable the Convex AI Gateway.',
-      );
-    }
-    return await requestChatCompletion(
-      'https://api.openai.com/v1/chat/completions',
-      apiKey,
-      'gpt-4o-mini',
-      messages,
-    );
-  }
-}
-
-async function requestChatCompletion(
-  endpoint: string,
-  apiKey: string,
-  model: string,
-  messages: Array<{ role: 'system' | 'user'; content: string }>,
-) {
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.4,
-      response_format: { type: 'json_object' },
-      messages,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`ChatGPT request failed (${response.status})`);
-  }
-
-  const payload: unknown = await response.json();
-  const content = readChatContent(payload);
-  if (!content) {
-    throw new Error('ChatGPT returned an empty response');
-  }
-  return content;
-}
-
-function readChatContent(payload: unknown) {
-  if (!payload || typeof payload !== 'object') {
-    return undefined;
-  }
-  const choices = (payload as { choices?: unknown }).choices;
-  if (!Array.isArray(choices) || choices.length === 0) {
-    return undefined;
-  }
-  const message = (choices[0] as { message?: { content?: unknown } }).message;
-  return typeof message?.content === 'string' ? message.content : undefined;
-}
-
 function parseChatAnalysis(content: string, events: LumaEvent[]): ChatAnalysis {
-  const json = extractJson(content);
-  const summary =
-    typeof json.summary === 'string' && json.summary.trim().length > 0
-      ? json.summary.trim()
-      : events.length > 0
+  return {
+    summary: parseChatSummary(
+      content,
+      events.length > 0
         ? 'Here are upcoming Luma events near you, matched to your profile.'
-        : 'No matching Luma events were found for this city.';
-
-  const rawPicks = Array.isArray(json.picks) ? json.picks : [];
-  const knownIds = new Set(events.map((event) => event.id));
-  const picks: ChatPick[] = rawPicks.flatMap((pick) => {
-    if (!pick || typeof pick !== 'object') {
-      return [];
-    }
-    const record = pick as { id?: unknown; name?: unknown; reason?: unknown; fit?: unknown };
-    const id = typeof record.id === 'string' ? record.id : undefined;
-    const name = typeof record.name === 'string' ? record.name.trim() : undefined;
-    const reason = typeof record.reason === 'string' ? record.reason.trim() : '';
-    const fit =
-      record.fit === 'high' || record.fit === 'medium' || record.fit === 'low'
-        ? record.fit
-        : 'medium';
-    if (!id || !knownIds.has(id) || !reason) {
-      return [];
-    }
-    return [{ id, name, reason, fit }];
-  });
-
-  return { summary, picks };
+        : 'No matching Luma events were found for this city.',
+    ),
+    picks: parseChatPicks(content, new Set(events.map((event) => event.id))),
+  };
 }
 
 function rankEvents(events: LumaEvent[], analysis: ChatAnalysis) {
@@ -414,26 +247,4 @@ function rankEvents(events: LumaEvent[], analysis: ChatAnalysis) {
   }
 
   return remainder.slice(0, 8);
-}
-
-function prettyJson(content: string) {
-  try {
-    return JSON.stringify(JSON.parse(content), null, 2);
-  } catch {
-    return content;
-  }
-}
-
-function extractJson(content: string) {
-  const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = fenced?.[1] ?? content;
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') {
-      return parsed as Record<string, unknown>;
-    }
-  } catch {
-    return {};
-  }
-  return {};
 }

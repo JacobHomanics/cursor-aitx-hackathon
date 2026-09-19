@@ -54,4 +54,26 @@ export default defineSchema({
     prompt: v.optional(v.string()),
     response: v.optional(v.string()),
   }).index('by_token', ['tokenIdentifier']),
+
+  courseAnalyses: defineTable({
+    tokenIdentifier: v.string(),
+    summary: v.string(),
+    courses: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        url: v.string(),
+        channel: v.optional(v.string()),
+        kind: v.optional(v.union(v.literal('playlist'), v.literal('video'))),
+        videoCount: v.optional(v.string()),
+        duration: v.optional(v.string()),
+        coverUrl: v.optional(v.string()),
+        reason: v.optional(v.string()),
+        fit: v.optional(v.union(v.literal('high'), v.literal('medium'), v.literal('low'))),
+      }),
+    ),
+    createdAt: v.number(),
+    prompt: v.optional(v.string()),
+    response: v.optional(v.string()),
+  }).index('by_token', ['tokenIdentifier']),
 });
